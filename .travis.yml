@@ -1,0 +1,77 @@
+dist: trusty
+
+# test if not a version tag
+language: python
+python:
+  - 2.7
+  - 3.4
+  - 3.5
+  - 3.6
+install:
+  - export MPLBACKEND="agg"
+  - python setup.py install
+  - pip install -e .
+  - pip install -r requirements-test.txt
+script:
+  - flake8
+  - nosetests --nologcapture
+  - ls examples/*.py | xargs -n1 python
+if: NOT tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$
+
+jobs:
+  include:
+
+    # deploy and document if a master branch commit
+    - stage: deploy and document
+      python: 3.6
+      sudo: required
+      install:
+        - export MPLBACKEND="agg"
+        # install version bumped
+        - python setup.py install
+        - export VERSION_TAG=$(python -c "from pbr.version import SemanticVersion; print(SemanticVersion.from_pip_string('$(pip show groupica | grep Version | awk '{print $2'})').brief_string())")
+        - git tag $VERSION_TAG -f
+        - python setup.py install
+        - pip install -e .
+        # install documentation and deployment requirements
+        - pip install -r docs/requirements.txt
+        - pip install twine
+        - sudo apt-get install pandoc
+      script:
+        # stop on first error
+        - set -e
+        # terminate if newer release is already deployed
+        - if [ "$VERSION_TAG" != "`git tag -l --sort -version:refname | grep -Po ^[0-9]+\.[0-9]+\.[0-9]+$ | head -n1`" ]; then travis_terminate; fi
+        # git config
+        - git config --global user.email "contact@travis-ci.com"
+        - git config --global user.name "Travis CI"
+        # push release tag to github
+        - git tag -a $VERSION_TAG -f -m "ci generated release"
+        - git push --quiet https://$GH_TOKEN@github.com/$TRAVIS_REPO_SLUG $VERSION_TAG > /dev/null 2>&1 && echo $? || echo $?
+        # prepare for packaging
+        - pandoc --from=markdown --to=rst --output=README.rst README.md
+        - sed -i -e 's/README.md/README.rst/g' setup.cfg
+        - rm -r docs
+        - rm .travis.yml README.md requirements-test.txt
+        # upload to testpypi
+        - python setup.py sdist bdist_wheel
+        - twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u $TWINE_USER -p $TWINE_PW --skip-existing > /dev/null 2>&1
+        - rm README.rst
+        # terminate if newer release is already documented
+        - git fetch origin gh-pages && git tag $(git log -n1 FETCH_HEAD | tail -n1 | awk '{print $6'}) -f || echo
+        - if [ "$VERSION_TAG" != "`git tag -l --sort -version:refname | grep -Po ^[0-9]+\.[0-9]+\.[0-9]+$ | head -n1`" ]; then travis_terminate; fi
+        # make doc and push to an orphaned gh-pages branch
+        - git checkout -f --orphan gh-pages
+        - git rm --cached -r -f .
+        - echo $VERSION_TAG > version.txt
+        - make html -C docs/
+        - cp AUTHORS ChangeLog LICENSE MAINTAINERS README* docs/_build/ && echo $? || echo $?
+        - rm -rf !(.|..|.git|docs)
+        - mv docs/_build/* .
+        - rm -rf docs/
+        - ls | xargs -n1 git add
+        - touch .nojekyll
+        - git add .nojekyll
+        - git commit -m "ci generated documentation for version $VERSION_TAG"
+        - git push --quiet --force https://$GH_TOKEN@github.com/$TRAVIS_REPO_SLUG gh-pages > /dev/null 2>&1
+      if: type = push AND fork = false AND branch = master

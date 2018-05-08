@@ -1,0 +1,5 @@
+Image
+matplotlib
+numpydoc
+sphinx
+sphinx-gallery
