@@ -55,7 +55,7 @@ jobs:
         - rm .travis.yml README.md requirements-test.txt
         # upload to testpypi
         - python setup.py sdist bdist_wheel
-        - twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u $TWINE_USER -p $TWINE_PW --skip-existing > /dev/null 2>&1
+        - twine upload dist/* -u $TWINE_USER -p $TWINE_PW --skip-existing > /dev/null 2>&1
         - rm README.rst
         # terminate if newer release is already documented
         - git fetch origin gh-pages && git tag $(git log -n1 FETCH_HEAD | tail -n1 | awk '{print $6'}) -f || echo

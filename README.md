@@ -1,3 +1,4 @@
+[![PyPI version](https://badge.fury.io/py/groupICA.svg)](https://badge.fury.io/py/groupICA)
 [![Build Status](https://travis-ci.org/sweichwald/groupICA-python.svg?branch=master)](https://travis-ci.org/sweichwald/groupICA-python)
 
 # groupICA-python
