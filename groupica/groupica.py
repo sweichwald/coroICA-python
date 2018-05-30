@@ -14,8 +14,12 @@ class GroupICA(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    n_components : int, optinal
+    n_components : int, optional
         Number of components to extract. If none is passed, the same number of
+        components as the input has dimensions is used.
+    n_components_uwedge : int, optional
+        Number of components to extract during uwedge approximate joint
+        diagonalization of the matrices. If none is passed, the same number of
         components as the input has dimensions is used.
     rank_components : boolean, optional
         When true, the components will be ordered in decreasing signal
@@ -42,8 +46,10 @@ class GroupICA(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    V_ : array, shape (n_components, n_features)
-        The unmixing matrix.
+    V_ : array, shape (n, n_features)
+        The unmixing matrix; where n=n_features if n_components_uwedge is None
+        and n=n_components_uwedge otherwise. n_components will be taken into
+        account during transform only; the unmixing matrix is kept complete.
     converged_ : boolean
         Whether the approximate joint diagonalisation converged due to tol.
     n_iter_ : int
@@ -59,6 +65,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
 
     def __init__(self,
                  n_components=None,
+                 n_components_uwedge=None,
                  rank_components=False,
                  pairing='complement',
                  groupsize=None,
@@ -66,6 +73,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
                  max_iter=1000,
                  tol=1e-12):
         self.n_components = n_components
+        self.n_components_uwedge = n_components_uwedge
         self.rank_components = rank_components
         self.pairing = pairing
         self.groupsize = groupsize
@@ -172,10 +180,10 @@ class GroupICA(BaseEstimator, TransformerMixin):
                 rm_x0=True,
                 eps=self.tol,
                 n_iter_max=self.max_iter,
-                n_components=self.n_components)
+                n_components=self.n_components_uwedge)
 
         # rank components
-        if self.rank_components:
+        if self.rank_components or self.n_components is not None:
             A = linalg.pinv(self.V_)
             colcorrs = np.zeros(self.V_.shape[0])
             # running average
@@ -204,7 +212,10 @@ class GroupICA(BaseEstimator, TransformerMixin):
         """
         check_is_fitted(self, ['V_'])
         X = check_array(X)
-        return self.V_.dot(X.T).T
+        if self.n_components is None:
+            return self.V_.dot(X.T).T
+        else:
+            return self.V_[:self.n_components, :].dot(X.T).T
 
 
 def rigidpartition(group, nosamples):
