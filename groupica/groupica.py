@@ -47,9 +47,9 @@ class GroupICA(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     V_ : array, shape (n, n_features)
-        The unmixing matrix; where n=n_features if n_components_uwedge is None
-        and n=n_components_uwedge otherwise. n_components will be taken into
-        account during transform only; the unmixing matrix is kept complete.
+        The unmixing matrix; where n=n_features if n_components and
+        n_components_uwedge are None, n=n_components_uwedge if n_components is
+        None, and n=n_components otherwise.
     converged_ : boolean
         Whether the approximate joint diagonalisation converged due to tol.
     n_iter_ : int
@@ -195,6 +195,9 @@ class GroupICA(BaseEstimator, TransformerMixin):
             sorting = np.argsort(colcorrs)[::-1]
             self.V_ = self.V_[sorting, :]
 
+        if self.n_components is not None:
+            self.V_ = self.V_[:self.n_components, :]
+
         return self
 
     def transform(self, X):
@@ -212,10 +215,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
         """
         check_is_fitted(self, ['V_'])
         X = check_array(X)
-        if self.n_components is None:
-            return self.V_.dot(X.T).T
-        else:
-            return self.V_[:self.n_components, :].dot(X.T).T
+        return self.V_.dot(X.T).T
 
 
 def rigidpartition(group, nosamples):
