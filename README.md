@@ -3,10 +3,10 @@
 
 # groupICA-python
 
-Please refer to the project website at http://sweichwald.de/groupICA/.
+Please refer to the project website at https://sweichwald.de/groupICA/.
 
 Quick install
 
     pip install groupICA
 
-The developer documentation is available at http://sweichwald.de/groupICA-python.
+The developer documentation is available at https://sweichwald.de/groupICA-python.
