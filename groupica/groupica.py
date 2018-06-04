@@ -22,8 +22,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
         diagonalization of the matrices. If none is passed, the same number of
         components as the input has dimensions is used.
     rank_components : boolean, optional
-        When true, the components will be ordered in decreasing signal
-        strengths.
+        When true, the components will be ordered in decreasing stability.
     pairing : {'complement', 'allpairs'}
         Whether difference matrices should be computed for all pairs of
         partition covariance matrices or only in a one-vs-complement scheme.
@@ -31,7 +30,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
         Approximately how many samples, when doing a rigid grid, shall be in
         each group. If none is passed, all samples will be in one group unless
         group_index is passed during fitting in which case the provided group
-        index is used (the latter is the adviced and preferred way).
+        index is used (the latter is the advised and preferred way).
     partitionsize : int, optional
         Approxiately how many samples, when doing a rigid grid, should be in
         each partition. If none is passed, a (hopefully sane) default is used,
