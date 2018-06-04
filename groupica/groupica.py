@@ -174,13 +174,12 @@ class GroupICA(BaseEstimator, TransformerMixin):
         covmats = np.concatenate((np.cov(X)[None, ...], covmats), axis=0)
 
         # joint diagonalisation
-        self.V_, self.converged_, self.n_iter_, self.meanoffdiag_, \
-            self.sig2noise_ = uwedge(
-                covmats,
-                rm_x0=True,
-                eps=self.tol,
-                n_iter_max=self.max_iter,
-                n_components=self.n_components_uwedge)
+        self.V_, self.converged_, self.n_iter_, self.meanoffdiag_ = uwedge(
+            covmats,
+            rm_x0=True,
+            eps=self.tol,
+            n_iter_max=self.max_iter,
+            n_components=self.n_components_uwedge)
 
         # rank components
         if self.rank_components or self.n_components is not None:

@@ -32,10 +32,6 @@ def uwedge(Rx,
     if n_components is None:
         n_components = d
 
-    sig2noise = lin.norm(Rx) / lin.norm(Rx0) * (1 / M)
-    if verbose:
-        print('uwedge: sig2noise: {}'.format(sig2noise))
-
     # Initial guess
     if init is None and n_components == d:
         E, H = np.linalg.eigh(Rx[0, :, :])
@@ -93,5 +89,5 @@ def uwedge(Rx,
 
     # Return
     if return_diagonals:
-        return V, diagonals, converged, iteration, meanoffdiag, sig2noise
-    return V, converged, iteration, meanoffdiag, sig2noise
+        return V, diagonals, converged, iteration, meanoffdiag
+    return V, converged, iteration, meanoffdiag
