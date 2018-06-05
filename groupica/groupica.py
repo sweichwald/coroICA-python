@@ -61,9 +61,6 @@ class GroupICA(BaseEstimator, TransformerMixin):
         Mean absolute value of the off-diagonal values of the to be jointly
         diagonalised matrices, i.e., a proxy of the approximate joint
         diagonalisation objective function.
-    sig2noise_ : float
-        A measure of signal strenghts in the difference matrices; used for
-        internal review only.
     """
 
     def __init__(self,
