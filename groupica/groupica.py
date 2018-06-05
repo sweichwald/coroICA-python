@@ -1,5 +1,9 @@
 """
 groupICA
+Implementation of the groupICA algorithm presented in
+groupICA: Independent component analysis for grouped data
+N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
+https://arxiv.org/abs/1806.01094
 """
 from .uwedge import uwedge
 import numpy as np
