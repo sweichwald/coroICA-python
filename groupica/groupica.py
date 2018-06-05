@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 groupICA
 Implementation of the groupICA algorithm presented in
