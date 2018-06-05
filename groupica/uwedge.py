@@ -34,8 +34,11 @@ def uwedge(Rx,
 
     # Initial guess
     if init is None and n_components == d:
-        E, H = lin.eigh(Rx[0, :, :])
-        V = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T)
+        if Rx.shape[0] > 0:
+            E, H = lin.eigh(Rx[0, :, :])
+            V = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T)
+        else:
+            V = np.eye(d)
     elif init is None:
         E, H = lin.eigh(Rx[0, :, :])
         mat = np.hstack([np.diag(1. / np.sqrt(np.abs(E[:n_components]))),
