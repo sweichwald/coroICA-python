@@ -11,6 +11,7 @@ from scipy import linalg
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import check_is_fitted
+import warnings
 
 
 class GroupICA(BaseEstimator, TransformerMixin):
@@ -146,9 +147,15 @@ class GroupICA(BaseEstimator, TransformerMixin):
                             (group_index == group))
                     ind2 = ((partition_index != partition) &
                             (group_index == group))
-                    covmats[idx, :, :] = np.cov(X[:, ind1]) - \
-                        np.cov(X[:, ind2])
-                    idx += 1
+                    if ind2.sum() > 0:
+                        covmats[idx, :, :] = np.cov(X[:, ind1]) - \
+                            np.cov(X[:, ind2])
+                        idx += 1
+                    else:
+                        warnings.warn('Removing group {} since the partition '
+                                      'is trivial, i.e., contains only '
+                                      'exactly one set'.format(group),
+                                      UserWarning)
         elif self.pairing == 'allpairs':
             no_pairs = 0
             subvec = np.zeros(no_groups, dtype=int)
@@ -160,15 +167,21 @@ class GroupICA(BaseEstimator, TransformerMixin):
             idx = 0
             for count, group in enumerate(np.unique(group_index)):
                 unique_subs = np.unique(partition_index[group_index == group])
-                for i in range(subvec[count] - 1):
-                    for j in range(i + 1, subvec[count]):
-                        ind1 = ((partition_index == unique_subs[i]) &
-                                (group_index == group))
-                        ind2 = ((partition_index == unique_subs[j]) &
-                                (group_index == group))
-                        covmats[idx, :, :] = np.cov(X[:, ind1]) - \
-                            np.cov(X[:, ind2])
-                        idx += 1
+                if subvec[count] <= 1:
+                    warnings.warn('Removing group {} since the partition '
+                                  'is trivial, i.e., contains only exactly '
+                                  'one set'.format(group), UserWarning)
+                else:
+                    for i in range(subvec[count] - 1):
+                        for j in range(i + 1, subvec[count]):
+                            ind1 = ((partition_index == unique_subs[i]) &
+                                    (group_index == group))
+                            ind2 = ((partition_index == unique_subs[j]) &
+                                    (group_index == group))
+                            covmats[idx, :, :] = np.cov(X[:, ind1]) - \
+                                np.cov(X[:, ind2])
+                            idx += 1
+        covmats = covmats[:idx, :, :]
 
         # add total observational covariance for normalization
         covmats = np.concatenate((np.cov(X)[None, ...], covmats), axis=0)
