@@ -18,4 +18,5 @@ This repository holds the source of the [groupICA package](https://pypi.org/proj
 Furthermore, as a courtesy to other python users, this package contains implementations of
 * uwedge, an approximate matrix joint diagonalisation algorithm described [here](https://doi.org/10.1109/TSP.2008.2009271), and
 * `uwedgeICA`, which essentially—for the right choice of `timelag` parameters—amounts to an implementation of several second-order-statistics-based ICA algorithms such as SOBI/NSS-JD/NSS-TD-JD (please refer to the groupICA article mentioned above for more details on this),
+
 which may be helpful in their own right independent of the grouped ICA.
