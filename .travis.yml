@@ -13,7 +13,7 @@ install:
   - pip install -e .
   - pip install -r requirements-test.txt
 script:
-  - flake8
+  - flake8 examples groupica
   - nosetests --nologcapture
   - ls examples/*.py | xargs -n1 python
 if: NOT tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$
