@@ -6,7 +6,7 @@ Minimalistic example
 Demonstrate basic use of :class:`groupica.GroupICA`
 """
 import numpy as np
-from groupica import GroupICA
+from groupica import GroupICA, UwedgeICA
 from matplotlib import pyplot as plt
 from sklearn.decomposition import FastICA
 from sklearn.linear_model import LinearRegression
@@ -18,12 +18,12 @@ X = np.random.randn(500, 25)
 y = np.random.randn(500,)
 
 group_index = np.zeros(500,)
-group_index[250:] = 1
+group_index[200:] = 1
 
 X[:, :10] = X[:, :10] + 2 * y.reshape(-1, 1)
 
-X[:250, 5:20] += 3 * np.random.randn(250, 15).dot(np.random.randn(15, 15))
-X[250:, 5:20] += 3 * np.random.randn(250, 15).dot(np.random.randn(15, 15))
+X[:200, 5:20] += 3 * np.random.randn(200, 15).dot(np.random.randn(15, 15))
+X[200:, 5:20] += 5 * np.random.randn(300, 15).dot(np.random.randn(15, 15))
 
 # define groupICA-based pipeline
 model_groupICA = Pipeline(steps=[
@@ -37,6 +37,17 @@ y_hat_groupICA = cross_val_predict(
     y,
     fit_params={'groupICA__group_index': group_index})
 
+# define uwedgeICA-based pipeline (second-order-based, ignores groupstructure)
+model_uwedgeICA = Pipeline(steps=[
+    ('uwedgeICA', UwedgeICA(n_components=10)),
+    ('regression', LinearRegression())])
+
+# get cross-validated predictions with uwedgeICA-based pipeline
+y_hat_uwedgeICA = cross_val_predict(
+    model_uwedgeICA,
+    X,
+    y)
+
 # define pooled fastica-based pipeline (ignores groupstructure)
 model_fastica = Pipeline(steps=[
     ('fastica', FastICA(n_components=10)),
@@ -48,11 +59,16 @@ y_hat_fastica = cross_val_predict(
     X,
     y)
 
-# for comparison plot scatter of both predictions against the true y
+# for comparison plot scatter of predictions against the true y
 plt.plot(y, y_hat_groupICA,
          '.',
          label='groupICA (correlation with true y {:.2f})'.format(
              np.corrcoef(y, y_hat_groupICA)[0, 1]))
+
+plt.plot(y, y_hat_uwedgeICA,
+         '.',
+         label='uwedgeICA (correlation with true y {:.2f})'.format(
+             np.corrcoef(y, y_hat_uwedgeICA)[0, 1]))
 
 plt.plot(y, y_hat_fastica,
          '.',
