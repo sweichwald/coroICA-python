@@ -18,12 +18,12 @@ X = np.random.randn(500, 25)
 y = np.random.randn(500,)
 
 group_index = np.zeros(500,)
-group_index[200:] = 1
+group_index[150:] = 1
 
 X[:, :10] = X[:, :10] + 2 * y.reshape(-1, 1)
 
-X[:200, 5:20] += 3 * np.random.randn(200, 15).dot(np.random.randn(15, 15))
-X[200:, 5:20] += 5 * np.random.randn(300, 15).dot(np.random.randn(15, 15))
+X[:150, 5:20] += 3 * np.random.randn(150, 15).dot(np.random.randn(15, 15))
+X[150:, 5:20] += 5 * np.random.randn(350, 15).dot(np.random.randn(15, 15))
 
 # define groupICA-based pipeline
 model_groupICA = Pipeline(steps=[
