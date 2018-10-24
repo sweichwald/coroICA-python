@@ -94,23 +94,27 @@ class GroupICA(BaseEstimator, TransformerMixin):
         y : Ignored.
         group_index : array, optional, shape (n_samples,)
             Codes for each sample which group it belongs to; if no group index
-            is provided a rigid grid with self.groupsize_ samples per
-            group is used (which defaults to all samples if self.groupsize_
+            is provided a rigid grid with self.groupsize samples per
+            group is used (which defaults to all samples if self.groupsize
             was not set).
         partition_index : array, optional, shape (n_samples,)
             Codes for each sample which partition it belongs to; if no
-            partition index is provided a rigid grid with self.partitionsize_
+            partition index is provided a rigid grid with self.partitionsize
             samples per partition within each group is used (which has a
-            (hopefully sane) default if self.partitionsize_ was not set).
+            (hopefully sane) default if self.partitionsize was not set).
 
         Returns
         -------
         self : object
             Returns self.
         """
-        X = check_array(X)
+        X = check_array(X, ensure_2d=True)
 
         n, dim = X.shape
+
+        if n <= 1 or dim <= 1:
+            self.V_ = np.eye(dim)
+            return self
 
         # generate group and partition indices as needed
         if group_index is None and self.groupsize is None:
