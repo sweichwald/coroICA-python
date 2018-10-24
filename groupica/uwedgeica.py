@@ -126,7 +126,7 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         for partition in np.unique(partition_index):
             ind = (partition_index == partition)
             for timelag in timelags:
-                covmats[idx, :, :] = autocov(X[:, ind])
+                covmats[idx, :, :] = autocov(X[:, ind], lag=timelag)
                 idx += 1
 
         # add total observational covariance for normalization
