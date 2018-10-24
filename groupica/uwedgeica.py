@@ -12,7 +12,6 @@ from scipy import linalg
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import check_is_fitted
-import warnings
 
 
 class UwedgeICA(BaseEstimator, TransformerMixin):
@@ -35,7 +34,8 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         unless partition_index is passed during fitting in which case
         the provided partition index is used.
     timelags : list of ints, optional
-        List of time lags to be considered for computing lagged covariance matrices.
+        List of time lags to be considered for computing lagged covariance
+        matrices.
     max_iter : int, optional
         Maximum number of iterations for the uwedge approximate joint
         diagonalisation during fitting.
@@ -193,6 +193,8 @@ def rigidpartition(length, nosamples):
     changepoints = list(set(changepoints))
     changepoints.sort()
     index = np.zeros(length)
-    for (i, a, b) in zip(range(partitions), changepoints[:-1], changepoints[1:]):
+    for (i, a, b) in zip(range(partitions),
+                         changepoints[:-1],
+                         changepoints[1:]):
         index[a:b] = i
     return index
