@@ -6,7 +6,7 @@ groupICA: Independent component analysis for grouped data
 N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """
-from .utils import rigidgroup
+from .utils import autocov, rigidgroup
 from .uwedge import uwedge
 import itertools
 import numpy as np
@@ -47,6 +47,11 @@ class GroupICA(BaseEstimator, TransformerMixin):
         each partition. If none is passed, a (hopefully sane) default is used,
         again, unless partition_index is passed during fitting in which case
         the provided partition index is used.
+    timelags : list of ints, optional
+        List of time lags to be considered for computing lagged covariance
+        matrices.
+    instantcov : boolean, optional
+        If False, no non-lagged instant (lag = 0) covariance matrices are used.
     max_iter : int, optional
         Maximum number of iterations for the uwedge approximate joint
         diagonalisation during fitting.
@@ -83,6 +88,8 @@ class GroupICA(BaseEstimator, TransformerMixin):
                  max_matrices=1.0,
                  groupsize=None,
                  partitionsize=None,
+                 timelags=None,
+                 instantcov=True,
                  max_iter=1000,
                  tol=1e-12,
                  random_state=None):
@@ -93,9 +100,16 @@ class GroupICA(BaseEstimator, TransformerMixin):
         self.max_matrices = max_matrices
         self.groupsize = groupsize
         self.partitionsize = partitionsize
+        self.timelags = timelags
+        self.instantcov = instantcov
         self.max_iter = max_iter
         self.tol = tol
         self.random_state = random_state
+        if self.timelags is None and not self.instantcov:
+            warnings.warn('timelags=None and instantcov=True results in the '
+                          'identity transformer, since no (lagged) covariance '
+                          'matrices are to be diagonalised.',
+                          UserWarning)
 
     def fit(self, X, y=None, group_index=None, partition_index=None):
         """Fit the model
@@ -154,12 +168,18 @@ class GroupICA(BaseEstimator, TransformerMixin):
         no_groups = np.unique(group_index).shape[0]
 
         # computing covariance difference matrices
+        timelags = []
+        if self.instantcov:
+            timelags.append(0)
+        if self.timelags is not None:
+            timelags.extend(self.timelags)
+        no_timelags = len(timelags)
         if self.pairing == 'complement':
             no_pairs = 0
             for group in np.unique(group_index):
                 no_pairs += len(
                     np.unique(partition_index[group_index == group]))
-            covmats = np.zeros((no_pairs, dim, dim))
+            covmats = np.zeros((no_pairs * no_timelags, dim, dim))
             idx = 0
             for group in np.unique(group_index):
                 unique_partitions = np.unique(
@@ -176,9 +196,11 @@ class GroupICA(BaseEstimator, TransformerMixin):
                     ind2 = ((partition_index != partition) &
                             (group_index == group))
                     if ind2.sum() > 0:
-                        covmats[idx, :, :] = np.cov(X[:, ind1]) - \
-                            np.cov(X[:, ind2])
-                        idx += 1
+                        for timelag in timelags:
+                            covmats[idx, :, :] = autocov(X[:, ind1],
+                                                         lag=timelag) - \
+                                autocov(X[:, ind2], lag=timelag)
+                            idx += 1
                     else:
                         warnings.warn('Removing group {} since the partition '
                                       'is trivial, i.e., contains only '
@@ -205,7 +227,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
                         replace=False
                     )]
                     no_pairs += pairs_per_group[i].shape[0]
-            covmats = np.zeros((no_pairs, dim, dim))
+            covmats = np.zeros((no_pairs * no_timelags, dim, dim))
             idx = 0
             for pairs, group in zip(pairs_per_group, np.unique(group_index)):
                 if pairs is not None:
@@ -214,9 +236,11 @@ class GroupICA(BaseEstimator, TransformerMixin):
                                 (group_index == group))
                         ind2 = ((partition_index == j) &
                                 (group_index == group))
-                        covmats[idx, :, :] = np.cov(X[:, ind1]) - \
-                            np.cov(X[:, ind2])
-                        idx += 1
+                        for timelag in timelags:
+                            covmats[idx, :, :] = autocov(X[:, ind1],
+                                                         lag=timelag) - \
+                                autocov(X[:, ind2], lag=timelag)
+                            idx += 1
         covmats = covmats[:idx, :, :]
 
         # add total observational covariance for normalization
