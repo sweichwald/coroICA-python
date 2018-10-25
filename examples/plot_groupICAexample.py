@@ -27,7 +27,10 @@ X[150:, 5:20] += 5 * np.random.randn(350, 15).dot(np.random.randn(15, 15))
 
 # define groupICA-based pipeline
 model_groupICA = Pipeline(steps=[
-    ('groupICA', GroupICA(n_components=10, timelags=[5, 10])),
+    ('groupICA', GroupICA(n_components=10,
+                          timelags=[5, 10],
+                          max_matrices='no_partitions',
+                          pairing='allpairs')),
     ('regression', LinearRegression())])
 
 # get cross-validated predictions with groupICA-based pipeline

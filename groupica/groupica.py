@@ -35,8 +35,10 @@ class GroupICA(BaseEstimator, TransformerMixin):
     pairing : {'complement', 'allpairs'}
         Whether difference matrices should be computed for all pairs of
         partition covariance matrices or only in a one-vs-complement scheme.
-    max_matrices : float, optional (default=1.0)
-        The fraction of (lagged) covariance matrices to use during training.
+    max_matrices : float or 'no_partitions', optional (default=1.0)
+        The fraction of (lagged) covariance matrices to use during training
+        or, if 'no_partitions', at most as many covariance matrices are used
+        as there are partitions.
     groupsize : int, optional
         Approximately how many samples, when doing a rigid grid, shall be in
         each group. If none is passed, all samples will be in one group unless
@@ -175,6 +177,10 @@ class GroupICA(BaseEstimator, TransformerMixin):
             timelags.extend(self.timelags)
         no_timelags = len(timelags)
         if self.pairing == 'complement':
+            if self.max_matrices == 'no_partitions':
+                max_matrices = 1.0
+            else:
+                max_matrices = self.max_matrices
             no_pairs = 0
             for group in np.unique(group_index):
                 no_pairs += len(
@@ -187,7 +193,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
                 unique_partitions = random_state.choice(
                     unique_partitions,
                     size=np.ceil(
-                        self.max_matrices * unique_partitions.shape[0]
+                        max_matrices * unique_partitions.shape[0]
                     ).astype(int),
                     replace=False)
                 for partition in unique_partitions:
@@ -219,10 +225,15 @@ class GroupICA(BaseEstimator, TransformerMixin):
                                   'is trivial, i.e., contains only exactly '
                                   'one set'.format(group), UserWarning)
                 else:
+                    if self.max_matrices == 'no_partitions':
+                        max_matrices = (len(unique_partitions) - 1) / \
+                            pairs.shape[0]
+                    else:
+                        max_matrices = self.max_matrices
                     pairs_per_group[i] = pairs[random_state.choice(
                         pairs.shape[0],
                         size=np.ceil(
-                            self.max_matrices * pairs.shape[0]
+                            max_matrices * pairs.shape[0]
                         ).astype(int),
                         replace=False
                     )]
