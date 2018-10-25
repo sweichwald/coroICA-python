@@ -6,6 +6,7 @@ groupICA: Independent component analysis for grouped data
 N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """
+from .utils import autocov
 from .uwedge import uwedge
 import numpy as np
 from scipy import linalg
@@ -188,16 +189,6 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         check_is_fitted(self, ['V_'])
         X = check_array(X)
         return self.V_.dot(X.T).T
-
-
-def autocov(X, lag=0):
-    if lag == 0:
-        return np.cov(X)
-    else:
-        A = X[:, lag:] - X[:, lag:].mean(axis=1, keepdims=True)
-        B = X[:, :-lag] - X[:, :-lag].mean(axis=1, keepdims=True)
-        n = A.shape[1] - 1
-        return A.dot(B.T) / n
 
 
 def rigidpartition(length, nosamples):
