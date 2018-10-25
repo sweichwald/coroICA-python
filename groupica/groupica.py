@@ -32,6 +32,8 @@ class GroupICA(BaseEstimator, TransformerMixin):
     pairing : {'complement', 'allpairs'}
         Whether difference matrices should be computed for all pairs of
         partition covariance matrices or only in a one-vs-complement scheme.
+    max_matrices : float, optional (default=1.0)
+        The fraction of (lagged) covariance matrices to use during training.
     groupsize : int, optional
         Approximately how many samples, when doing a rigid grid, shall be in
         each group. If none is passed, all samples will be in one group unless
@@ -70,6 +72,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
                  n_components_uwedge=None,
                  rank_components=False,
                  pairing='complement',
+                 max_matrices=1.0,
                  groupsize=None,
                  partitionsize=None,
                  max_iter=1000,
@@ -78,6 +81,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
         self.n_components_uwedge = n_components_uwedge
         self.rank_components = rank_components
         self.pairing = pairing
+        self.max_matrices = max_matrices
         self.groupsize = groupsize
         self.partitionsize = partitionsize
         self.max_iter = max_iter
@@ -146,8 +150,15 @@ class GroupICA(BaseEstimator, TransformerMixin):
             covmats = np.zeros((no_pairs, dim, dim))
             idx = 0
             for group in np.unique(group_index):
-                for partition in np.unique(
-                        partition_index[group_index == group]):
+                unique_partitions = np.unique(
+                    partition_index[group_index == group])
+                unique_partitions = np.random.choice(
+                    unique_partitions,
+                    size=np.ceil(
+                        self.max_matrices * unique_partitions.shape[0]
+                    ).astype(int),
+                    replace=False)
+                for partition in unique_partitions:
                     ind1 = ((partition_index == partition) &
                             (group_index == group))
                     ind2 = ((partition_index != partition) &
