@@ -36,6 +36,8 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
     timelags : list of ints, optional
         List of time lags to be considered for computing lagged covariance
         matrices.
+    instantcov : boolean, optional
+        If False, no non-lagged instant (lag = 0) covariance matrices are used.
     max_iter : int, optional
         Maximum number of iterations for the uwedge approximate joint
         diagonalisation during fitting.
@@ -65,6 +67,7 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
                  rank_components=False,
                  partitionsize=None,
                  timelags=None,
+                 instantcov=True,
                  max_iter=1000,
                  tol=1e-12):
         self.n_components = n_components
@@ -72,6 +75,7 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         self.rank_components = rank_components
         self.partitionsize = partitionsize
         self.timelags = timelags
+        self.instantcov = instantcov
         self.max_iter = max_iter
         self.tol = tol
 
@@ -99,7 +103,9 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
 
         n, dim = X.shape
 
-        if n <= 1 or dim <= 1:
+        if (n <= 1
+                or dim <= 1
+                or (self.timelags is None and not self.instantcov)):
             self.V_ = np.eye(dim)
             return self
 
@@ -117,9 +123,11 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
 
         # computing covariance matrices
         no_partitions = len(np.unique(partition_index))
-        timelags = [0]
+        timelags = []
+        if self.instantcov:
+            timelags.append(0)
         if self.timelags is not None:
-            timelags.exend(self.timelags)
+            timelags.extend(self.timelags)
         no_timelags = len(timelags)
         covmats = np.zeros((no_partitions * no_timelags, dim, dim))
         idx = 0
