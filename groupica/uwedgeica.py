@@ -12,6 +12,7 @@ from scipy import linalg
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import check_is_fitted
+import warnings
 
 
 class UwedgeICA(BaseEstimator, TransformerMixin):
@@ -78,6 +79,11 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         self.instantcov = instantcov
         self.max_iter = max_iter
         self.tol = tol
+        if self.timelags is None and not self.instantcov:
+            warnings.warn('timelags=None and instantcov=True results in the '
+                          'identity transformer, since no (lagged) covariance '
+                          'matrices are to be diagonalised.',
+                          UserWarning)
 
     def fit(self, X, y=None, partition_index=None):
         """Fit the model
