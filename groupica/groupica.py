@@ -6,6 +6,7 @@ groupICA: Independent component analysis for grouped data
 N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """
+from .utils import rigidgroup
 from .uwedge import uwedge
 import itertools
 import numpy as np
@@ -272,15 +273,3 @@ def rigidpartition(group, nosamples):
             (group == e).sum(),
             nosamples) + partition.max() + 1
     return partition
-
-
-def rigidgroup(length, nosamples):
-    groups = int(np.floor(length / nosamples))
-    changepoints = [int(np.round(a))
-                    for a in np.linspace(0, length, groups + 1)]
-    changepoints = list(set(changepoints))
-    changepoints.sort()
-    index = np.zeros(length)
-    for (i, a, b) in zip(range(groups), changepoints[:-1], changepoints[1:]):
-        index[a:b] = i
-    return index

@@ -7,6 +7,7 @@ N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """
 from .utils import autocov
+from .utils import rigidgroup as rigidpartition
 from .uwedge import uwedge
 import numpy as np
 from scipy import linalg
@@ -189,17 +190,3 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         check_is_fitted(self, ['V_'])
         X = check_array(X)
         return self.V_.dot(X.T).T
-
-
-def rigidpartition(length, nosamples):
-    partitions = int(np.floor(length / nosamples))
-    changepoints = [int(np.round(a))
-                    for a in np.linspace(0, length, partitions + 1)]
-    changepoints = list(set(changepoints))
-    changepoints.sort()
-    index = np.zeros(length)
-    for (i, a, b) in zip(range(partitions),
-                         changepoints[:-1],
-                         changepoints[1:]):
-        index[a:b] = i
-    return index
