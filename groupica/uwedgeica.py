@@ -137,7 +137,7 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         if self.timelags is not None:
             timelags.extend(self.timelags)
         no_timelags = len(timelags)
-        covmats = np.zeros((no_partitions * no_timelags, dim, dim))
+        covmats = np.empty((no_partitions * no_timelags, dim, dim))
         idx = 0
         for partition in np.unique(partition_index):
             ind = (partition_index == partition)
