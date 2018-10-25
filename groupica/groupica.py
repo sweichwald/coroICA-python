@@ -7,10 +7,12 @@ N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """
 from .uwedge import uwedge
+import itertools
 import numpy as np
 from scipy import linalg
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_X_y, check_array
+from sklearn.utils.random import check_random_state
 from sklearn.utils.validation import check_is_fitted
 import warnings
 
@@ -50,6 +52,11 @@ class GroupICA(BaseEstimator, TransformerMixin):
     tol : float, optional
         Tolerance for terminating the uwedge approximate joint diagonalisation
         during fitting.
+    random_state : int, RandomState instance or None, optional (default=None)
+        If int, random_state is seeded used by the random number generator;
+        if RandomState instance, random_state is the random number generator;
+        if None, the random number generator is the RandomState instance used
+        by np.random.
 
     Attributes
     ----------
@@ -76,7 +83,8 @@ class GroupICA(BaseEstimator, TransformerMixin):
                  groupsize=None,
                  partitionsize=None,
                  max_iter=1000,
-                 tol=1e-12):
+                 tol=1e-12,
+                 random_state=None):
         self.n_components = n_components
         self.n_components_uwedge = n_components_uwedge
         self.rank_components = rank_components
@@ -86,6 +94,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
         self.partitionsize = partitionsize
         self.max_iter = max_iter
         self.tol = tol
+        self.random_state = random_state
 
     def fit(self, X, y=None, group_index=None, partition_index=None):
         """Fit the model
@@ -120,6 +129,8 @@ class GroupICA(BaseEstimator, TransformerMixin):
             self.V_ = np.eye(dim)
             return self
 
+        random_state = check_random_state(self.random_state)
+
         # generate group and partition indices as needed
         if group_index is None and self.groupsize is None:
             group_index = np.zeros(n)
@@ -152,7 +163,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
             for group in np.unique(group_index):
                 unique_partitions = np.unique(
                     partition_index[group_index == group])
-                unique_partitions = np.random.choice(
+                unique_partitions = random_state.choice(
                     unique_partitions,
                     size=np.ceil(
                         self.max_matrices * unique_partitions.shape[0]
@@ -174,29 +185,37 @@ class GroupICA(BaseEstimator, TransformerMixin):
                                       UserWarning)
         elif self.pairing == 'allpairs':
             no_pairs = 0
-            subvec = np.zeros(no_groups, dtype=int)
+            pairs_per_group = [None] * no_groups
             for i, group in enumerate(np.unique(group_index)):
-                subvec[i] = np.int(len(
-                    np.unique(partition_index[group_index == group])))
-                no_pairs += int(subvec[i] * (subvec[i] - 1) / 2)
-            covmats = np.zeros((no_pairs, dim, dim))
-            idx = 0
-            for count, group in enumerate(np.unique(group_index)):
-                unique_subs = np.unique(partition_index[group_index == group])
-                if subvec[count] <= 1:
+                unique_partitions = np.unique(
+                    partition_index[group_index == group])
+                pairs = np.asarray(list(
+                    itertools.combinations(unique_partitions, 2)))
+                if pairs.shape[0] == 0:
                     warnings.warn('Removing group {} since the partition '
                                   'is trivial, i.e., contains only exactly '
                                   'one set'.format(group), UserWarning)
                 else:
-                    for i in range(subvec[count] - 1):
-                        for j in range(i + 1, subvec[count]):
-                            ind1 = ((partition_index == unique_subs[i]) &
-                                    (group_index == group))
-                            ind2 = ((partition_index == unique_subs[j]) &
-                                    (group_index == group))
-                            covmats[idx, :, :] = np.cov(X[:, ind1]) - \
-                                np.cov(X[:, ind2])
-                            idx += 1
+                    pairs_per_group[i] = pairs[random_state.choice(
+                        pairs.shape[0],
+                        size=np.ceil(
+                            self.max_matrices * pairs.shape[0]
+                        ).astype(int),
+                        replace=False
+                    )]
+                    no_pairs += pairs_per_group[i].shape[0]
+            covmats = np.zeros((no_pairs, dim, dim))
+            idx = 0
+            for pairs, group in zip(pairs_per_group, np.unique(group_index)):
+                if pairs is not None:
+                    for i, j in pairs:
+                        ind1 = ((partition_index == i) &
+                                (group_index == group))
+                        ind2 = ((partition_index == j) &
+                                (group_index == group))
+                        covmats[idx, :, :] = np.cov(X[:, ind1]) - \
+                            np.cov(X[:, ind2])
+                        idx += 1
         covmats = covmats[:idx, :, :]
 
         # add total observational covariance for normalization
