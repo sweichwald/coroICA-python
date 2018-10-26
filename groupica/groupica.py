@@ -35,7 +35,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
     pairing : {'complement', 'allpairs'}
         Whether difference matrices should be computed for all pairs of
         partition covariance matrices or only in a one-vs-complement scheme.
-    max_matrices : float or 'no_partitions', optional (default=1.0)
+    max_matrices : float or 'no_partitions', optional (default='no_partitions')
         The fraction of (lagged) covariance matrices to use during training
         or, if 'no_partitions', at most as many covariance matrices are used
         as there are partitions.
@@ -86,8 +86,8 @@ class GroupICA(BaseEstimator, TransformerMixin):
                  n_components=None,
                  n_components_uwedge=None,
                  rank_components=False,
-                 pairing='complement',
-                 max_matrices=1.0,
+                 pairing='allpairs',
+                 max_matrices='no_partitions',
                  groupsize=None,
                  partitionsize=None,
                  timelags=None,
