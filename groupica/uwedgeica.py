@@ -152,13 +152,10 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
                 covmats[idx, :, :] = autocov(X[:, ind], lag=timelag)
                 idx += 1
 
-        # add total observational covariance for normalization
-        covmats = np.concatenate((np.cov(X)[None, ...], covmats), axis=0)
-
         # joint diagonalisation
         self.V_, self.converged_, self.n_iter_, self.meanoffdiag_ = uwedge(
             covmats,
-            rm_x0=True,
+            Rx0=np.cov(X),
             eps=self.tol,
             minimize_loss=self.minimize_loss,
             n_iter_max=self.max_iter,

@@ -5,7 +5,7 @@ import scipy.linalg as lin
 
 def uwedge(Rx,
            init=None,
-           rm_x0=True,
+           Rx0=None,
            return_diagonals=False,
            eps=1e-10,
            n_iter_max=1000,
@@ -24,11 +24,9 @@ def uwedge(Rx,
 
     # 0) Preprocessing
 
-    # Remove and remember 0st matrix
-    Rx0 = np.copy(Rx[0, :, :])
-    if rm_x0:
-        Rx = Rx[1:, :, :]
     M, d = Rx.shape[0:2]
+    if Rx0 is None:
+        Rx0 = np.copy(Rx[0, :, :])
 
     if n_components is None:
         n_components = d
@@ -36,12 +34,12 @@ def uwedge(Rx,
     # Initial guess
     if init is None and n_components == d:
         if Rx.shape[0] > 0:
-            E, H = lin.eigh(Rx[0, :, :])
+            E, H = lin.eigh(Rx0)
             V = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T)
         else:
             V = np.eye(d)
     elif init is None:
-        E, H = lin.eigh(Rx[0, :, :])
+        E, H = lin.eigh(Rx0)
         mat = np.hstack([np.diag(1. / np.sqrt(np.abs(E[:n_components]))),
                          np.zeros((n_components, d - n_components))])
         V = np.dot(mat, H.T)
@@ -79,14 +77,11 @@ def uwedge(Rx,
         V = V / lin.norm(V, axis=1)[:, None]
 
         if minimize_loss:
-            normaliser = np.diag(V.dot(Rx0.dot(V.T)))
-            Vnorm = V / (
-                np.sign(normaliser) * np.sqrt(np.abs(normaliser)))[:, None]
-            diagonals = np.stack([Vnorm.dot(Rxx.dot(Vnorm.T)) for Rxx in Rx])
+            diagonals = np.stack([V.dot(Rxx.dot(V.T)) for Rxx in Rx])
             meanoffdiag = np.mean(
                 diagonals[:, ~np.eye(n_components, dtype=bool)]**2)
             if meanoffdiag < current_best[1]:
-                current_best = [Vnorm, meanoffdiag, iteration, diagonals]
+                current_best = [V, meanoffdiag, iteration, diagonals]
 
         # 6) Check convergence
         changeinV = np.max(np.abs(V - Vold))
@@ -101,8 +96,6 @@ def uwedge(Rx,
     if minimize_loss:
         V, meanoffdiag, iteration, diagonals = current_best
     else:
-        normaliser = np.diag(V.dot(Rx0.dot(V.T)))
-        V = V / (np.sign(normaliser) * np.sqrt(np.abs(normaliser)))[:, None]
         diagonals = np.stack([V.dot(Rxx.dot(V.T)) for Rxx in Rx])
         meanoffdiag = np.mean(
             diagonals[:, ~np.eye(n_components, dtype=bool)]**2)
