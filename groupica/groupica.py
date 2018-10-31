@@ -60,6 +60,11 @@ class GroupICA(BaseEstimator, TransformerMixin):
     tol : float, optional
         Tolerance for terminating the uwedge approximate joint diagonalisation
         during fitting.
+    minimize_loss : boolean, optional
+        If True at each iteration the loss of the uwedge approximate joint
+        diagonalisation is computed (computationally expensive) and after
+        convergence the V with minimal loss along the optimisation path is
+        returned instead of the terminal V.
     random_state : int, RandomState instance or None, optional (default=None)
         If int, random_state is seeded used by the random number generator;
         if RandomState instance, random_state is the random number generator;
@@ -94,6 +99,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
                  instantcov=True,
                  max_iter=1000,
                  tol=1e-12,
+                 minimize_loss=False,
                  random_state=None):
         self.n_components = n_components
         self.n_components_uwedge = n_components_uwedge
@@ -106,6 +112,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
         self.instantcov = instantcov
         self.max_iter = max_iter
         self.tol = tol
+        self.minimize_loss = minimize_loss
         self.random_state = random_state
         if self.timelags is None and not self.instantcov:
             warnings.warn('timelags=None and instantcov=True results in the '
@@ -262,6 +269,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
             covmats,
             rm_x0=True,
             eps=self.tol,
+            minimize_loss=self.minimize_loss,
             n_iter_max=self.max_iter,
             n_components=self.n_components_uwedge)
 

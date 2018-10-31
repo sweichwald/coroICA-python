@@ -9,6 +9,7 @@ def uwedge(Rx,
            return_diagonals=False,
            eps=1e-10,
            n_iter_max=1000,
+           minimize_loss=False,
            verbose=False,
            n_components=None):
     # Input:
@@ -49,6 +50,8 @@ def uwedge(Rx,
 
     V = V / lin.norm(V, axis=1)[:, None]
 
+    current_best = [None, np.inf, 0, None]
+
     for iteration in itertools.count():
         # 1) Generate Rs
         Rs = np.stack([V.dot(Rxx.dot(V.T)) for Rxx in Rx])
@@ -75,6 +78,16 @@ def uwedge(Rx,
         # 5) Normalise V
         V = V / lin.norm(V, axis=1)[:, None]
 
+        if minimize_loss:
+            normaliser = np.diag(V.dot(Rx0.dot(V.T)))
+            Vnorm = V / (
+                np.sign(normaliser) * np.sqrt(np.abs(normaliser)))[:, None]
+            diagonals = np.stack([Vnorm.dot(Rxx.dot(Vnorm.T)) for Rxx in Rx])
+            meanoffdiag = np.mean(
+                diagonals[:, ~np.eye(n_components, dtype=bool)]**2)
+            if meanoffdiag < current_best[1]:
+                current_best = [Vnorm, meanoffdiag, iteration, diagonals]
+
         # 6) Check convergence
         changeinV = np.max(np.abs(V - Vold))
         if iteration >= n_iter_max - 1:
@@ -85,10 +98,14 @@ def uwedge(Rx,
             break
 
     # Rescale
-    normaliser = np.diag(V.dot(Rx0.dot(V.T)))
-    V = V / (np.sign(normaliser) * np.sqrt(np.abs(normaliser)))[:, None]
-    diagonals = np.stack([V.dot(Rxx.dot(V.T)) for Rxx in Rx])
-    meanoffdiag = np.mean(diagonals[:, ~np.eye(n_components, dtype=bool)]**2)
+    if minimize_loss:
+        V, meanoffdiag, iteration, diagonals = current_best
+    else:
+        normaliser = np.diag(V.dot(Rx0.dot(V.T)))
+        V = V / (np.sign(normaliser) * np.sqrt(np.abs(normaliser)))[:, None]
+        diagonals = np.stack([V.dot(Rxx.dot(V.T)) for Rxx in Rx])
+        meanoffdiag = np.mean(
+            diagonals[:, ~np.eye(n_components, dtype=bool)]**2)
 
     # Return
     if return_diagonals:

@@ -47,6 +47,11 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
     tol : float, optional
         Tolerance for terminating the uwedge approximate joint diagonalisation
         during fitting.
+    minimize_loss : boolean, optional
+        If True at each iteration the loss of the uwedge approximate joint
+        diagonalisation is computed (computationally expensive) and after
+        convergence the V with minimal loss along the optimisation path is
+        returned instead of the terminal V.
 
     Attributes
     ----------
@@ -72,7 +77,8 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
                  timelags=None,
                  instantcov=True,
                  max_iter=1000,
-                 tol=1e-12):
+                 tol=1e-12,
+                 minimize_loss=False):
         self.n_components = n_components
         self.n_components_uwedge = n_components_uwedge
         self.rank_components = rank_components
@@ -81,6 +87,7 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         self.instantcov = instantcov
         self.max_iter = max_iter
         self.tol = tol
+        self.minimize_loss = minimize_loss
         if self.timelags is None and not self.instantcov:
             warnings.warn('timelags=None and instantcov=True results in the '
                           'identity transformer, since no (lagged) covariance '
@@ -153,6 +160,7 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
             covmats,
             rm_x0=True,
             eps=self.tol,
+            minimize_loss=self.minimize_loss,
             n_iter_max=self.max_iter,
             n_components=self.n_components_uwedge)
 
