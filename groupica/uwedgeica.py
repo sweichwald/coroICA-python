@@ -152,14 +152,21 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
                 covmats[idx, :, :] = autocov(X[:, ind], lag=timelag)
                 idx += 1
 
+        Rx0 = np.cov(X)
+
         # joint diagonalisation
         self.V_, self.converged_, self.n_iter_, self.meanoffdiag_ = uwedge(
             covmats,
-            Rx0=np.cov(X),
+            Rx0=Rx0,
             eps=self.tol,
             minimize_loss=self.minimize_loss,
             n_iter_max=self.max_iter,
             n_components=self.n_components_uwedge)
+
+        # normalise V
+        normaliser = np.diag(self.V_.dot(Rx0.dot(self.V_.T)))
+        self.V_ = self.V_ / (
+            np.sign(normaliser) * np.sqrt(np.abs(normaliser)))[:, None]
 
         # rank components
         if self.rank_components or self.n_components is not None:
