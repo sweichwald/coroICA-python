@@ -13,7 +13,7 @@ def uwedge(Rx,
            minimize_loss=False,
            verbose=False,
            n_components=None,
-           condition_threshold=1000):
+           condition_threshold=None):
     # Input:
     # Output:
     #   if return_diagonals=True
@@ -95,7 +95,8 @@ def uwedge(Rx,
             break
 
         # 7) Check condition number
-        if np.linalg.cond(V) > condition_threshold:
+        if (condition_threshold is not None
+                and np.linalg.cond(V) > condition_threshold):
             converged = False
             V = Vold
             iteration -= 1

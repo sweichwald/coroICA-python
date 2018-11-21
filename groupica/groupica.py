@@ -65,6 +65,10 @@ class GroupICA(BaseEstimator, TransformerMixin):
         diagonalisation is computed (computationally expensive) and after
         convergence the V with minimal loss along the optimisation path is
         returned instead of the terminal V.
+    condition_threshold : int, optional (default=None)
+        If int, the uwedge iteration is stopped when the condition number of
+        the unmixing matrix grows beyond condition_threshold. If None, no such
+        condition number check is performed.
     random_state : int, RandomState instance or None, optional (default=None)
         If int, random_state is seeded used by the random number generator;
         if RandomState instance, random_state is the random number generator;
@@ -100,6 +104,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
                  max_iter=5000,
                  tol=1e-12,
                  minimize_loss=False,
+                 condition_threshold=None,
                  random_state=None):
         self.n_components = n_components
         self.n_components_uwedge = n_components_uwedge
@@ -113,6 +118,7 @@ class GroupICA(BaseEstimator, TransformerMixin):
         self.max_iter = max_iter
         self.tol = tol
         self.minimize_loss = minimize_loss
+        self.condition_threshold = condition_threshold
         self.random_state = random_state
         if self.timelags is None and not self.instantcov:
             warnings.warn('timelags=None and instantcov=True results in the '
@@ -270,7 +276,8 @@ class GroupICA(BaseEstimator, TransformerMixin):
             eps=self.tol,
             minimize_loss=self.minimize_loss,
             n_iter_max=self.max_iter,
-            n_components=self.n_components_uwedge)
+            n_components=self.n_components_uwedge,
+            condition_threshold=self.condition_threshold)
 
         # normalise V
         normaliser = np.diag(self.V_.dot(Rx0.dot(self.V_.T)))

@@ -52,6 +52,10 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         diagonalisation is computed (computationally expensive) and after
         convergence the V with minimal loss along the optimisation path is
         returned instead of the terminal V.
+    condition_threshold : int, optional (default=None)
+        If int, the uwedge iteration is stopped when the condition number of
+        the unmixing matrix grows beyond condition_threshold. If None, no such
+        condition number check is performed.
 
     Attributes
     ----------
@@ -78,7 +82,8 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
                  instantcov=True,
                  max_iter=1000,
                  tol=1e-12,
-                 minimize_loss=False):
+                 minimize_loss=False,
+                 condition_threshold=None):
         self.n_components = n_components
         self.n_components_uwedge = n_components_uwedge
         self.rank_components = rank_components
@@ -88,6 +93,7 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         self.max_iter = max_iter
         self.tol = tol
         self.minimize_loss = minimize_loss
+        self.condition_threshold = condition_threshold
         if self.timelags is None and not self.instantcov:
             warnings.warn('timelags=None and instantcov=True results in the '
                           'identity transformer, since no (lagged) covariance '
@@ -161,7 +167,8 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
             eps=self.tol,
             minimize_loss=self.minimize_loss,
             n_iter_max=self.max_iter,
-            n_components=self.n_components_uwedge)
+            n_components=self.n_components_uwedge,
+            condition_threshold=self.condition_threshold)
 
         # normalise V
         normaliser = np.diag(self.V_.dot(Rx0.dot(self.V_.T)))
