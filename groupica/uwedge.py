@@ -1,6 +1,7 @@
 import itertools
 import numpy as np
 import scipy.linalg as lin
+import warnings
 
 
 def uwedge(Rx,
@@ -11,7 +12,8 @@ def uwedge(Rx,
            n_iter_max=1000,
            minimize_loss=False,
            verbose=False,
-           n_components=None):
+           n_components=None,
+           condition_threshold=1000):
     # Input:
     # Output:
     #   if return_diagonals=True
@@ -90,6 +92,16 @@ def uwedge(Rx,
             break
         elif changeinV < eps:
             converged = True
+            break
+
+        # 7) Check condition number
+        if np.linalg.cond(V) > condition_threshold:
+            converged = False
+            V = Vold
+            iteration -= 1
+            warnings.warn('Abort uwedge due to unreasonably growing condition '
+                          'number of unmixing matrix V',
+                          UserWarning)
             break
 
     # Rescale
