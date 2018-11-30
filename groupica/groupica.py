@@ -169,14 +169,17 @@ class GroupICA(BaseEstimator, TransformerMixin):
         if partition_index is None and self.partitionsize is None:
             smallest_group = np.min([(group_index == group).sum()
                                      for group in np.unique(group_index)])
-            partition_index = rigidpartition(
+            partition_indices = [rigidpartition(
                 group_index,
-                np.max([dim, smallest_group // 2]))
+                np.max([dim, smallest_group // 2]))]
         elif partition_index is None:
-            partition_index = rigidpartition(group_index, self.partitionsize)
+            # partition_index = rigidpartition(group_index, self.partitionsize)
+            partition_indices = [rigidpartition(group_index, partsize)
+                                 for partsize in self.partitionsize]
 
         X, group_index = check_X_y(X, group_index)
-        X, partition_index = check_X_y(X, partition_index)
+        for partition_index in partition_indices:
+            X, partition_index = check_X_y(X, partition_index)
 
         X = X.T
 
@@ -189,68 +192,69 @@ class GroupICA(BaseEstimator, TransformerMixin):
         if self.timelags is not None:
             timelags.extend(self.timelags)
         no_timelags = len(timelags)
-        if self.pairing == 'complement':
-            if self.max_matrices == 'no_partitions':
-                max_matrices = 1.0
-            else:
-                max_matrices = self.max_matrices
-            no_pairs = 0
-            for group in np.unique(group_index):
-                no_pairs += len(
-                    np.unique(partition_index[group_index == group]))
-            covmats = np.empty((no_pairs * no_timelags, dim, dim))
-            idx = 0
-            for group in np.unique(group_index):
-                unique_partitions = np.unique(
-                    partition_index[group_index == group])
-                unique_partitions = random_state.choice(
-                    unique_partitions,
-                    size=np.ceil(
-                        max_matrices * unique_partitions.shape[0]
-                    ).astype(int),
-                    replace=False)
-                for partition in unique_partitions:
-                    ind1 = ((partition_index == partition) &
-                            (group_index == group))
-                    ind2 = ((partition_index != partition) &
-                            (group_index == group))
-                    if ind2.sum() > 0:
-                        for timelag in timelags:
-                            covmats[idx, :, :] = autocov(X[:, ind1],
-                                                         lag=timelag) - \
-                                autocov(X[:, ind2], lag=timelag)
-                            idx += 1
-                    else:
-                        warnings.warn('Removing group {} since the partition '
-                                      'is trivial, i.e., contains only '
-                                      'exactly one set'.format(group),
-                                      UserWarning)
-        elif self.pairing == 'allpairs':
-            no_pairs = 0
-            pairs_per_group = [None] * no_groups
-            for i, group in enumerate(np.unique(group_index)):
-                unique_partitions = np.unique(
-                    partition_index[group_index == group])
-                pairs = np.asarray(list(
-                    itertools.combinations(unique_partitions, 2)))
-                if pairs.shape[0] == 0:
-                    warnings.warn('Removing group {} since the partition '
-                                  'is trivial, i.e., contains only exactly '
-                                  'one set'.format(group), UserWarning)
+        for partition_index in partition_indices:
+            if self.pairing == 'complement':
+                if self.max_matrices == 'no_partitions':
+                    max_matrices = 1.0
                 else:
-                    if self.max_matrices == 'no_partitions':
-                        max_matrices = (len(unique_partitions) - 1) / \
-                            pairs.shape[0]
-                    else:
-                        max_matrices = self.max_matrices
-                    pairs_per_group[i] = pairs[random_state.choice(
-                        pairs.shape[0],
+                    max_matrices = self.max_matrices
+                no_pairs = 0
+                for group in np.unique(group_index):
+                    no_pairs += len(
+                        np.unique(partition_index[group_index == group]))
+                covmats = np.empty((no_pairs * no_timelags, dim, dim))
+                idx = 0
+                for group in np.unique(group_index):
+                    unique_partitions = np.unique(
+                        partition_index[group_index == group])
+                    unique_partitions = random_state.choice(
+                        unique_partitions,
                         size=np.ceil(
-                            max_matrices * pairs.shape[0]
+                            max_matrices * unique_partitions.shape[0]
                         ).astype(int),
-                        replace=False
-                    )]
-                    no_pairs += pairs_per_group[i].shape[0]
+                        replace=False)
+                    for partition in unique_partitions:
+                        ind1 = ((partition_index == partition) &
+                                (group_index == group))
+                        ind2 = ((partition_index != partition) &
+                                (group_index == group))
+                        if ind2.sum() > 0:
+                            for timelag in timelags:
+                                covmats[idx, :, :] = autocov(X[:, ind1],
+                                                             lag=timelag) - \
+                                                             autocov(X[:, ind2], lag=timelag)
+                                idx += 1
+                        else:
+                            warnings.warn('Removing group {} since the partition '
+                                          'is trivial, i.e., contains only '
+                                          'exactly one set'.format(group),
+                                          UserWarning)
+            elif self.pairing == 'allpairs':
+                no_pairs = 0
+                pairs_per_group = [None] * no_groups
+                for i, group in enumerate(np.unique(group_index)):
+                    unique_partitions = np.unique(
+                        partition_index[group_index == group])
+                    pairs = np.asarray(list(
+                        itertools.combinations(unique_partitions, 2)))
+                    if pairs.shape[0] == 0:
+                        warnings.warn('Removing group {} since the partition '
+                                      'is trivial, i.e., contains only exactly '
+                                      'one set'.format(group), UserWarning)
+                    else:
+                        if self.max_matrices == 'no_partitions':
+                            max_matrices = (len(unique_partitions) - 1) / \
+                                pairs.shape[0]
+                        else:
+                            max_matrices = self.max_matrices
+                        pairs_per_group[i] = pairs[random_state.choice(
+                            pairs.shape[0],
+                            size=np.ceil(
+                                max_matrices * pairs.shape[0]
+                            ).astype(int),
+                            replace=False
+                        )]
+                        no_pairs += pairs_per_group[i].shape[0]
             covmats = np.empty((no_pairs * no_timelags, dim, dim))
             idx = 0
             for pairs, group in zip(pairs_per_group, np.unique(group_index)):

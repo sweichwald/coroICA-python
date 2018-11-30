@@ -132,18 +132,25 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
 
         # generate partition index as needed
         if partition_index is None and self.partitionsize is None:
-            partition_index = rigidpartition(
+            partition_indices = rigidpartition(
                 n,
                 np.max([dim, n // 2]))
         elif partition_index is None:
-            partition_index = rigidpartition(n, self.partitionsize)
+            # partition_index = rigidpartition(n, self.partitionsize)
+            partition_indices = [rigidpartition(n, partsize)
+                                 for partsize in self.partitionsize]
 
-        X, partition_index = check_X_y(X, partition_index)
+        ## Need to adjust incase partition_index is given!!!!
+
+        for partition_index in partition_indices:
+            X, partition_index = check_X_y(X, partition_index)
 
         X = X.T
 
         # computing covariance matrices
-        no_partitions = len(np.unique(partition_index))
+        no_partitions = 0
+        for partition_index in partition_indices:
+            no_partitions += len(np.unique(partition_index))
         timelags = []
         if self.instantcov:
             timelags.append(0)
@@ -152,11 +159,12 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         no_timelags = len(timelags)
         covmats = np.empty((no_partitions * no_timelags, dim, dim))
         idx = 0
-        for partition in np.unique(partition_index):
-            ind = (partition_index == partition)
-            for timelag in timelags:
-                covmats[idx, :, :] = autocov(X[:, ind], lag=timelag)
-                idx += 1
+        for partition_index in partition_indices:
+            for partition in np.unique(partition_index):
+                ind = (partition_index == partition)
+                for timelag in timelags:
+                    covmats[idx, :, :] = autocov(X[:, ind], lag=timelag)
+                    idx += 1
 
         Rx0 = np.cov(X)
 
