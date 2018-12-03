@@ -31,8 +31,8 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         components as the input has dimensions is used.
     rank_components : boolean, optional
         When true, the components will be ordered in decreasing stability.
-    partitionsize : int, optional
-        Approxiately how many samples, when doing a rigid grid, should be in
+    partitionsize : int or list of int, optional
+        Approximately how many samples, when doing a rigid grid, should be in
         each partition. If none is passed, a (hopefully sane) default is used
         unless partition_index is passed during fitting in which case
         the provided partition index is used.
@@ -132,15 +132,16 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
 
         # generate partition index as needed
         if partition_index is None and self.partitionsize is None:
-            partition_indices = rigidpartition(
+            partition_indices = [rigidpartition(
                 n,
-                np.max([dim, n // 2]))
-        elif partition_index is None:
-            # partition_index = rigidpartition(n, self.partitionsize)
+                np.max([dim, n // 2]))]
+        elif partition_index is None and type(self.partitionsize) == list:
             partition_indices = [rigidpartition(n, partsize)
                                  for partsize in self.partitionsize]
-
-        ## Need to adjust incase partition_index is given!!!!
+        elif partition_index is None:
+            partition_indices = [rigidpartition(n, self.partitionsize)]
+        else:
+            partition_indices = [partition_index]
 
         for partition_index in partition_indices:
             X, partition_index = check_X_y(X, partition_index)

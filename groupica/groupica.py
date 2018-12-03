@@ -44,8 +44,13 @@ class GroupICA(BaseEstimator, TransformerMixin):
         each group. If none is passed, all samples will be in one group unless
         group_index is passed during fitting in which case the provided group
         index is used (the latter is the advised and preferred way).
+    partitionsize : int or list of int, optional
+        Approximately how many samples, when doing a rigid grid, should be in
+        each partition. If none is passed, a (hopefully sane) default is used
+        unless partition_index is passed during fitting in which case
+        the provided partition index is used.
     partitionsize : int, optional
-        Approxiately how many samples, when doing a rigid grid, should be in
+        Approximately how many samples, when doing a rigid grid, should be in
         each partition. If none is passed, a (hopefully sane) default is used,
         again, unless partition_index is passed during fitting in which case
         the provided partition index is used.
@@ -166,16 +171,21 @@ class GroupICA(BaseEstimator, TransformerMixin):
             group_index = np.zeros(n)
         elif group_index is None:
             group_index = rigidgroup(n, self.groupsize)
+
+        # generate partition index as needed
         if partition_index is None and self.partitionsize is None:
             smallest_group = np.min([(group_index == group).sum()
                                      for group in np.unique(group_index)])
             partition_indices = [rigidpartition(
                 group_index,
                 np.max([dim, smallest_group // 2]))]
-        elif partition_index is None:
-            # partition_index = rigidpartition(group_index, self.partitionsize)
+        elif partition_index is None and type(self.partitionsize) == list:
             partition_indices = [rigidpartition(group_index, partsize)
                                  for partsize in self.partitionsize]
+        elif partition_index is None:
+            partition_index = [rigidpartition(group_index, self.partitionsize)]
+        else:
+            partition_indices = [partition_index]
 
         X, group_index = check_X_y(X, group_index)
         for partition_index in partition_indices:
@@ -220,14 +230,15 @@ class GroupICA(BaseEstimator, TransformerMixin):
                                 (group_index == group))
                         if ind2.sum() > 0:
                             for timelag in timelags:
-                                covmats[idx, :, :] = autocov(X[:, ind1],
-                                                             lag=timelag) - \
-                                                             autocov(X[:, ind2], lag=timelag)
+                                covmats[idx, :, :] = autocov(
+                                    X[:, ind1], lag=timelag) - \
+                                    autocov(X[:, ind2], lag=timelag)
                                 idx += 1
                         else:
-                            warnings.warn('Removing group {} since the partition '
-                                          'is trivial, i.e., contains only '
-                                          'exactly one set'.format(group),
+                            warnings.warn('Removing group {} since the '
+                                          'partition is trivial, i.e., '
+                                          'contains only exactly one '
+                                          'set'.format(group),
                                           UserWarning)
             elif self.pairing == 'allpairs':
                 no_pairs = 0
@@ -238,9 +249,11 @@ class GroupICA(BaseEstimator, TransformerMixin):
                     pairs = np.asarray(list(
                         itertools.combinations(unique_partitions, 2)))
                     if pairs.shape[0] == 0:
-                        warnings.warn('Removing group {} since the partition '
-                                      'is trivial, i.e., contains only exactly '
-                                      'one set'.format(group), UserWarning)
+                            warnings.warn('Removing group {} since the '
+                                          'partition is trivial, i.e., '
+                                          'contains only exactly one '
+                                          'set'.format(group),
+                                          UserWarning)
                     else:
                         if self.max_matrices == 'no_partitions':
                             max_matrices = (len(unique_partitions) - 1) / \
@@ -255,20 +268,20 @@ class GroupICA(BaseEstimator, TransformerMixin):
                             replace=False
                         )]
                         no_pairs += pairs_per_group[i].shape[0]
-            covmats = np.empty((no_pairs * no_timelags, dim, dim))
-            idx = 0
-            for pairs, group in zip(pairs_per_group, np.unique(group_index)):
-                if pairs is not None:
-                    for i, j in pairs:
-                        ind1 = ((partition_index == i) &
-                                (group_index == group))
-                        ind2 = ((partition_index == j) &
-                                (group_index == group))
-                        for timelag in timelags:
-                            covmats[idx, :, :] = autocov(X[:, ind1],
-                                                         lag=timelag) - \
-                                autocov(X[:, ind2], lag=timelag)
-                            idx += 1
+                covmats = np.empty((no_pairs * no_timelags, dim, dim))
+                idx = 0
+                for pairs, group in zip(pairs_per_group, np.unique(group_index)):
+                    if pairs is not None:
+                        for i, j in pairs:
+                            ind1 = ((partition_index == i) &
+                                    (group_index == group))
+                            ind2 = ((partition_index == j) &
+                                    (group_index == group))
+                            for timelag in timelags:
+                                covmats[idx, :, :] = autocov(
+                                    X[:, ind1], lag=timelag) - \
+                                    autocov(X[:, ind2], lag=timelag)
+                                idx += 1
         covmats = covmats[:idx, :, :]
 
         Rx0 = np.cov(X)
