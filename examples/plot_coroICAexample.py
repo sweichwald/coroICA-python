@@ -28,9 +28,9 @@ X[150:, 5:20] += 5 * np.random.randn(350, 15).dot(np.random.randn(15, 15))
 # define coroICA-based pipeline
 model_coroICA = Pipeline(steps=[
     ('coroICA', CoroICA(n_components=10,
-                          timelags=[5, 10],
-                          max_matrices='no_partitions',
-                          pairing='allpairs')),
+                        timelags=[5, 10],
+                        max_matrices='no_partitions',
+                        pairing='allpairs')),
     ('regression', LinearRegression())])
 
 # get cross-validated predictions with coroICA-based pipeline
