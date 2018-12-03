@@ -1,8 +1,8 @@
 # coding: utf-8
 """
-groupICA
-Implementation of the groupICA algorithm presented in
-groupICA: Independent component analysis for grouped data
+coroICA
+Implementation of the coroICA algorithm presented in
+coroICA: Independent component analysis for grouped data
 N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """
@@ -18,8 +18,8 @@ from sklearn.utils.validation import check_is_fitted
 import warnings
 
 
-class GroupICA(BaseEstimator, TransformerMixin):
-    """groupICA transformer
+class CoroICA(BaseEstimator, TransformerMixin):
+    """coroICA transformer
 
     Parameters
     ----------
@@ -270,7 +270,8 @@ class GroupICA(BaseEstimator, TransformerMixin):
                         no_pairs += pairs_per_group[i].shape[0]
                 covmats = np.empty((no_pairs * no_timelags, dim, dim))
                 idx = 0
-                for pairs, group in zip(pairs_per_group, np.unique(group_index)):
+                for pairs, group in zip(
+                        pairs_per_group, np.unique(group_index)):
                     if pairs is not None:
                         for i, j in pairs:
                             ind1 = ((partition_index == i) &

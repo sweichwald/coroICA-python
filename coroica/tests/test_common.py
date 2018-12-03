@@ -1,9 +1,9 @@
-from groupica import GroupICA, UwedgeICA
+from coroica import CoroICA, UwedgeICA
 from sklearn.utils.estimator_checks import check_estimator
 
 
-def test_transformer_groupICA():
-    return check_estimator(GroupICA)
+def test_transformer_coroICA():
+    return check_estimator(CoroICA)
 
 
 def test_transformer_uwedgeICA():

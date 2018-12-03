@@ -2,7 +2,7 @@
 
 [Fork and clone the repository][fork]:
 
-    git clone git@github.com:your-username/groupICA-python.git
+    git clone git@github.com:your-username/coroICA-python.git
 
 Verify that all existing tests pass by either running
 
@@ -19,13 +19,13 @@ Refer to [this guide][commits] on how to write good commit messages.
 
 ## Sign-off
 
-By making a contribution (pull requesting or committing) to the groupICA-python project you certify that
+By making a contribution (pull requesting or committing) to the coroICA-python project you certify that
 
-* you have the right to submit it to groupICA-python.
+* you have the right to submit it to coroICA-python.
 
 * you created the contribution/modification; or you based it on previous work that, to the best of your knowledge, is covered by a compatible open source license; or someone who did one of the former provided you with this contribution/modification and you are submitting it without changes.
 
-* you understand and agree that your contribution/modification to this project is public and that a record of it (including all information you submit with it, including copyright notices and your sign-off) is maintained indefinitely and may be redistributed consistent with groupICA-python's AGPL v3 license or the open source license(s) involved.
+* you understand and agree that your contribution/modification to this project is public and that a record of it (including all information you submit with it, including copyright notices and your sign-off) is maintained indefinitely and may be redistributed consistent with coroICA-python's AGPL v3 license or the open source license(s) involved.
 
 To make your certification explicit we borrow the "sign-off" procedure from the Linux kernel project, i.e., each commit message should contain a line saying
 

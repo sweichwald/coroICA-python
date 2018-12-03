@@ -18,7 +18,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'groupICA-python'
+project = 'coroICA-python'
 copyright = '2018, Niklas Pfister, Sebastian Weichwald'
 author = 'Niklas Pfister, Sebastian Weichwald'
 
@@ -118,7 +118,7 @@ html_theme = 'alabaster'
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'groupICA-pythondoc'
+htmlhelp_basename = 'coroICA-pythondoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -145,7 +145,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'groupICA-python.tex', 'groupICA-python Documentation',
+    (master_doc, 'coroICA-python.tex', 'coroICA-python Documentation',
      'Niklas Pfister, Sebastian Weichwald', 'manual'),
 ]
 
@@ -155,7 +155,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'groupica-python', 'groupICA-python Documentation',
+    (master_doc, 'coroica-python', 'coroICA-python Documentation',
      [author], 1)
 ]
 
@@ -166,8 +166,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'groupICA-python', 'groupICA-python Documentation',
-     author, 'groupICA-python', 'One line description of project.',
+    (master_doc, 'coroICA-python', 'coroICA-python Documentation',
+     author, 'coroICA-python', 'One line description of project.',
      'Miscellaneous'),
 ]
 

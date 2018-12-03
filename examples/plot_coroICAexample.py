@@ -3,10 +3,10 @@
 Minimalistic example
 ====================
 
-Demonstrate basic use of :class:`groupica.GroupICA`
+Demonstrate basic use of :class:`coroica.CoroICA`
 """
 import numpy as np
-from groupica import GroupICA, UwedgeICA
+from coroica import CoroICA, UwedgeICA
 from matplotlib import pyplot as plt
 from sklearn.decomposition import FastICA
 from sklearn.linear_model import LinearRegression
@@ -25,20 +25,20 @@ X[:, :10] = X[:, :10] + 2 * y.reshape(-1, 1)
 X[:150, 5:20] += 3 * np.random.randn(150, 15).dot(np.random.randn(15, 15))
 X[150:, 5:20] += 5 * np.random.randn(350, 15).dot(np.random.randn(15, 15))
 
-# define groupICA-based pipeline
-model_groupICA = Pipeline(steps=[
-    ('groupICA', GroupICA(n_components=10,
+# define coroICA-based pipeline
+model_coroICA = Pipeline(steps=[
+    ('coroICA', CoroICA(n_components=10,
                           timelags=[5, 10],
                           max_matrices='no_partitions',
                           pairing='allpairs')),
     ('regression', LinearRegression())])
 
-# get cross-validated predictions with groupICA-based pipeline
-y_hat_groupICA = cross_val_predict(
-    model_groupICA,
+# get cross-validated predictions with coroICA-based pipeline
+y_hat_coroICA = cross_val_predict(
+    model_coroICA,
     X,
     y,
-    fit_params={'groupICA__group_index': group_index})
+    fit_params={'coroICA__group_index': group_index})
 
 # define uwedgeICA-based pipeline (second-order-based, ignores groupstructure)
 model_uwedgeICA = Pipeline(steps=[
@@ -63,10 +63,10 @@ y_hat_fastica = cross_val_predict(
     y)
 
 # for comparison plot scatter of predictions against the true y
-plt.plot(y, y_hat_groupICA,
+plt.plot(y, y_hat_coroICA,
          '.',
-         label='groupICA (correlation with true y {:.2f})'.format(
-             np.corrcoef(y, y_hat_groupICA)[0, 1]))
+         label='coroICA (correlation with true y {:.2f})'.format(
+             np.corrcoef(y, y_hat_coroICA)[0, 1]))
 
 plt.plot(y, y_hat_uwedgeICA,
          '.',

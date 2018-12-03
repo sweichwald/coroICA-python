@@ -2,7 +2,7 @@
 """
 uwedgeICA
 Implementation of the NSS uwedgeICA algorithms used for comparison in
-groupICA: Independent component analysis for grouped data
+coroICA: Independent component analysis for grouped data
 N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """

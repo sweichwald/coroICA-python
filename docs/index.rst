@@ -1,5 +1,5 @@
-groupICA-python
-===============
+coroICA-python
+==============
 
 Version |version|
 
@@ -9,7 +9,7 @@ Version |version|
     auto_examples/index
 
 
-.. automodule:: groupica
+.. automodule:: coroica
     :members:
     :undoc-members:
     :show-inheritance:
