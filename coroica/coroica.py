@@ -183,7 +183,8 @@ class CoroICA(BaseEstimator, TransformerMixin):
             partition_indices = [rigidpartition(group_index, partsize)
                                  for partsize in self.partitionsize]
         elif partition_index is None:
-            partition_index = [rigidpartition(group_index, self.partitionsize)]
+            partition_indices = [
+                rigidpartition(group_index, self.partitionsize)]
         else:
             partition_indices = [partition_index]
 
