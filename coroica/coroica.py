@@ -32,9 +32,10 @@ class CoroICA(BaseEstimator, TransformerMixin):
         components as the input has dimensions is used.
     rank_components : boolean, optional
         When true, the components will be ordered in decreasing stability.
-    pairing : {'complement', 'allpairs'}
+    pairing : {'complement', 'allpairs', 'neighbouring'}
         Whether difference matrices should be computed for all pairs of
-        partition covariance matrices or only in a one-vs-complement scheme.
+        partition covariance matrices or only in a one-vs-complement scheme or
+        only of neighbouring partition covariance matrices.
     max_matrices : float or 'no_partitions', optional (default=1)
         The fraction of (lagged) covariance matrices to use during training
         or, if 'no_partitions', at most as many covariance matrices are used
@@ -241,14 +242,19 @@ class CoroICA(BaseEstimator, TransformerMixin):
                                           'contains only exactly one '
                                           'set'.format(group),
                                           UserWarning)
-            elif self.pairing == 'allpairs':
+            elif self.pairing in ['allpairs', 'neighbouring']:
                 no_pairs = 0
                 pairs_per_group = [None] * no_groups
                 for i, group in enumerate(np.unique(group_index)):
                     unique_partitions = np.unique(
                         partition_index[group_index == group])
-                    pairs = np.asarray(list(
-                        itertools.combinations(unique_partitions, 2)))
+                    if self.pairing == 'allpairs':
+                        pairs = np.asarray(list(
+                            itertools.combinations(unique_partitions, 2)))
+                    elif self.pairing == 'neighbouring':
+                        pairs = np.asarray([
+                            [unique_partitions[k], unique_partitions[k + 1]]
+                            for k in range(len(unique_partitions) - 1)])
                     if pairs.shape[0] == 0:
                             warnings.warn('Removing group {} since the '
                                           'partition is trivial, i.e., '
