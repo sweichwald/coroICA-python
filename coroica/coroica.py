@@ -2,7 +2,8 @@
 """
 coroICA
 Implementation of the coroICA algorithm presented in
-Robustifying Independent Component Analysis by Adjusting for Group-Wise Stationary Noise
+Robustifying Independent Component Analysis
+by Adjusting for Group-Wise Stationary Noise
 N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """
