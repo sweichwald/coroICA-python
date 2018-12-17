@@ -2,7 +2,7 @@
 """
 coroICA
 Implementation of the coroICA algorithm presented in
-coroICA: Independent component analysis for grouped data
+Robustifying Independent Component Analysis by Adjusting for Group-Wise Stationary Noise
 N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf
 https://arxiv.org/abs/1806.01094
 """
