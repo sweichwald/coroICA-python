@@ -215,7 +215,8 @@ class CoroICA(BaseEstimator, TransformerMixin):
                 for group in np.unique(group_index):
                     no_pairs += len(
                         np.unique(partition_index[group_index == group]))
-                covmats = np.empty((no_pairs * no_timelags, dim, dim))
+                covmats = np.empty((no_pairs * no_timelags, dim, dim),
+                                   dtype=X.dtype)
                 idx = 0
                 for group in np.unique(group_index):
                     unique_partitions = np.unique(
@@ -276,7 +277,8 @@ class CoroICA(BaseEstimator, TransformerMixin):
                             replace=False
                         )]
                         no_pairs += pairs_per_group[i].shape[0]
-                covmats = np.empty((no_pairs * no_timelags, dim, dim))
+                covmats = np.empty((no_pairs * no_timelags, dim, dim),
+                                   dtype=X.dtype)
                 idx = 0
                 for pairs, group in zip(
                         pairs_per_group, np.unique(group_index)):
@@ -306,7 +308,7 @@ class CoroICA(BaseEstimator, TransformerMixin):
             condition_threshold=self.condition_threshold)
 
         # normalise V
-        normaliser = np.diag(self.V_.dot(Rx0.dot(self.V_.T)))
+        normaliser = np.diag(self.V_.dot(Rx0.dot(self.V_.T.conj())))
         self.V_ = self.V_ / (
             np.sign(normaliser) * np.sqrt(np.abs(normaliser)))[:, None]
 

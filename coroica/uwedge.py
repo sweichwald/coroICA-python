@@ -37,14 +37,14 @@ def uwedge(Rx,
     if init is None and n_components == d:
         if Rx.shape[0] > 0:
             E, H = lin.eigh(Rx0)
-            V = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T)
+            V = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T.conj())
         else:
             V = np.eye(d)
     elif init is None:
         E, H = lin.eigh(Rx0)
         mat = np.hstack([np.diag(1. / np.sqrt(np.abs(E[:n_components]))),
                          np.zeros((n_components, d - n_components))])
-        V = np.dot(mat, H.T)
+        V = np.dot(mat, H.T.conj())
     else:
         V = init[:n_components, :]
 
@@ -52,9 +52,11 @@ def uwedge(Rx,
 
     current_best = [None, np.inf, 0, None]
 
+    TINY = np.finfo(V.dtype).eps
+
     for iteration in itertools.count():
         # 1) Generate Rs
-        Rs = np.stack([V.dot(Rxx.dot(V.T)) for Rxx in Rx])
+        Rs = np.stack([V.dot(Rxx.dot(V.T.conj())) for Rxx in Rx])
 
         # 2) Use Rs to construct A, equation (24) in paper with W=Id
         # 3) Set A1=Id and substitute off-diagonals
@@ -65,7 +67,7 @@ def uwedge(Rx,
             Rsdiagprod.diagonal()) - Rsdiagprod**2
         Rkl = np.einsum('ill,ikl->kl', Rs, Rs)
         num_mat = Rsdiagprod.diagonal()[:, None] * Rkl - Rsdiagprod * Rkl.T
-        denom_mat[denom_mat == 0] = np.finfo(V.dtype).eps
+        denom_mat[denom_mat == 0] = TINY
         A = num_mat / (denom_mat + np.eye(n_components))
         np.fill_diagonal(A, 1)
 
@@ -79,9 +81,9 @@ def uwedge(Rx,
         V = V / lin.norm(V, axis=1)[:, None]
 
         if minimize_loss:
-            diagonals = np.stack([V.dot(Rxx.dot(V.T)) for Rxx in Rx])
-            meanoffdiag = np.mean(
-                diagonals[:, ~np.eye(n_components, dtype=bool)]**2)
+            diagonals = np.stack([V.dot(Rxx.dot(V.T.conj())) for Rxx in Rx])
+            meanoffdiag = np.mean(np.abs(
+                diagonals[:, ~np.eye(n_components, dtype=bool)])**2)
             if meanoffdiag < current_best[1]:
                 current_best = [V, meanoffdiag, iteration, diagonals]
 
@@ -109,9 +111,9 @@ def uwedge(Rx,
     if minimize_loss:
         V, meanoffdiag, iteration, diagonals = current_best
     else:
-        diagonals = np.stack([V.dot(Rxx.dot(V.T)) for Rxx in Rx])
-        meanoffdiag = np.mean(
-            diagonals[:, ~np.eye(n_components, dtype=bool)]**2)
+        diagonals = np.stack([V.dot(Rxx.dot(V.T.conj())) for Rxx in Rx])
+        meanoffdiag = np.mean(np.abs(
+            diagonals[:, ~np.eye(n_components, dtype=bool)])**2)
 
     # Return
     if return_diagonals:
