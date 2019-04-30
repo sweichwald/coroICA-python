@@ -16,7 +16,7 @@ def sim_samples(d, M, dtype):
     V = np.linalg.inv(A)
     diags = [np.diag(np.random.uniform(1, 2, size=d))
              for i in range(M)]
-    Rxx = np.stack([A.dot(d.dot(A.T.conj())) for d in diags])
+    Rxx = np.stack([A.dot(D.dot(A.T.conj())) for D in diags])
     return A, V, diags, Rxx
 
 
