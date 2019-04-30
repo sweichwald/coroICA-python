@@ -257,11 +257,11 @@ class CoroICA(BaseEstimator, TransformerMixin):
                             [unique_partitions[k], unique_partitions[k + 1]]
                             for k in range(len(unique_partitions) - 1)])
                     if pairs.shape[0] == 0:
-                            warnings.warn('Removing group {} since the '
-                                          'partition is trivial, i.e., '
-                                          'contains only exactly one '
-                                          'set'.format(group),
-                                          UserWarning)
+                        warnings.warn('Removing group {} since the '
+                                      'partition is trivial, i.e., '
+                                      'contains only exactly one '
+                                      'set'.format(group),
+                                      UserWarning)
                     else:
                         if self.max_matrices == 'no_partitions':
                             max_matrices = (len(unique_partitions) - 1) / \
