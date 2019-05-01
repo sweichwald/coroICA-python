@@ -36,7 +36,7 @@ class UwedgeICA(BaseEstimator, TransformerMixin):
         each partition. If none is passed, a (hopefully sane) default is used
         unless partition_index is passed during fitting in which case
         the provided partition index is used.
-    timelags : list of ints, optional
+    timelags : list of strictly positive ints, optional
         List of time lags to be considered for computing lagged covariance
         matrices.
     instantcov : boolean, optional
