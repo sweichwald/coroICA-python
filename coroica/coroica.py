@@ -81,6 +81,13 @@ class CoroICA(BaseEstimator, TransformerMixin):
         if RandomState instance, random_state is the random number generator;
         if None, the random number generator is the RandomState instance used
         by np.random.
+    skip_sklearn_checks: boolean, optional (default=False)
+        If True, the sklearn checks check_array and check_X_y are being
+        skipped. This enables complex value support; sklearn does not support
+        complex values and check_array and check_X_y would throw a ValueError.
+        As also the other sanity checks performed in check_array and check_X_y
+        are being skipped, special caution is required when enabling this
+        option.
 
     Attributes
     ----------
@@ -112,7 +119,8 @@ class CoroICA(BaseEstimator, TransformerMixin):
                  tol=1e-12,
                  minimize_loss=False,
                  condition_threshold=None,
-                 random_state=None):
+                 random_state=None,
+                 skip_sklearn_checks=False):
         self.n_components = n_components
         self.n_components_uwedge = n_components_uwedge
         self.rank_components = rank_components
@@ -127,6 +135,7 @@ class CoroICA(BaseEstimator, TransformerMixin):
         self.minimize_loss = minimize_loss
         self.condition_threshold = condition_threshold
         self.random_state = random_state
+        self.skip_sklearn_checks = skip_sklearn_checks
         if self.timelags is None and not self.instantcov:
             warnings.warn('timelags=None and instantcov=True results in the '
                           'identity transformer, since no (lagged) covariance '
@@ -158,7 +167,8 @@ class CoroICA(BaseEstimator, TransformerMixin):
         self : object
             Returns self.
         """
-        X = check_array(X, ensure_2d=True)
+        if not self.skip_sklearn_checks:
+            X = check_array(X, ensure_2d=True)
 
         n, dim = X.shape
 
@@ -190,9 +200,10 @@ class CoroICA(BaseEstimator, TransformerMixin):
         else:
             partition_indices = [partition_index]
 
-        X, group_index = check_X_y(X, group_index)
-        for partition_index in partition_indices:
-            X, partition_index = check_X_y(X, partition_index)
+        if not self.skip_sklearn_checks:
+            X, group_index = check_X_y(X, group_index)
+            for partition_index in partition_indices:
+                X, partition_index = check_X_y(X, partition_index)
 
         X = X.T
 
@@ -344,7 +355,8 @@ class CoroICA(BaseEstimator, TransformerMixin):
         X_transformed : array, shape (n_samples, n_components)
         """
         check_is_fitted(self, ['V_'])
-        X = check_array(X)
+        if not self.skip_sklearn_checks:
+            X = check_array(X)
         return self.V_.dot(X.T).T
 
 
