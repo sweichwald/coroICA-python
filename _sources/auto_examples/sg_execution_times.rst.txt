@@ -1,0 +1,10 @@
+
+:orphan:
+
+.. _sphx_glr_auto_examples_sg_execution_times:
+
+Computation times
+=================
+**00:09.423** total execution time for **auto_examples** files:
+
+- **00:09.423**: :ref:`sphx_glr_auto_examples_plot_coroICAexample.py` (``plot_coroICAexample.py``)

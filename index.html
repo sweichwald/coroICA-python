@@ -1,0 +1,424 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>coroICA-python &#8212; coroICA-python 0.1.24
+ documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/gallery.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Minimalistic example" href="auto_examples/index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="coroica-python">
+<h1>coroICA-python<a class="headerlink" href="#coroica-python" title="Permalink to this headline">¶</a></h1>
+<p>Version 0.1.24
+</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_examples/index.html">Minimalistic example</a></li>
+</ul>
+</div>
+<span class="target" id="module-coroica"></span><dl class="class">
+<dt id="coroica.CoroICA">
+<em class="property">class </em><code class="descclassname">coroica.</code><code class="descname">CoroICA</code><span class="sig-paren">(</span><em>n_components=None</em>, <em>n_components_uwedge=None</em>, <em>rank_components=False</em>, <em>pairing='complement'</em>, <em>max_matrices=1</em>, <em>groupsize=None</em>, <em>partitionsize=None</em>, <em>timelags=None</em>, <em>instantcov=True</em>, <em>max_iter=5000</em>, <em>tol=1e-12</em>, <em>minimize_loss=False</em>, <em>condition_threshold=None</em>, <em>random_state=None</em>, <em>skip_sklearn_checks=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coroica/coroica.html#CoroICA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coroica.CoroICA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.BaseEstimator</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></p>
+<p>coroICA transformer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>n_components</strong><span class="classifier">int, optional</span></dt><dd><p>Number of components to extract. If none is passed, the same number of
+components as the input has dimensions is used.</p>
+</dd>
+<dt><strong>n_components_uwedge</strong><span class="classifier">int, optional</span></dt><dd><p>Number of components to extract during uwedge approximate joint
+diagonalization of the matrices. If none is passed, the same number of
+components as the input has dimensions is used.</p>
+</dd>
+<dt><strong>rank_components</strong><span class="classifier">boolean, optional</span></dt><dd><p>When true, the components will be ordered in decreasing stability.</p>
+</dd>
+<dt><strong>pairing</strong><span class="classifier">{‘complement’, ‘allpairs’, ‘neighbouring’}</span></dt><dd><p>Whether difference matrices should be computed for all pairs of
+partition covariance matrices or only in a one-vs-complement scheme or
+only of neighbouring partition covariance matrices.</p>
+</dd>
+<dt><strong>max_matrices</strong><span class="classifier">float or ‘no_partitions’, optional (default=1)</span></dt><dd><p>The fraction of (lagged) covariance matrices to use during training
+or, if ‘no_partitions’, at most as many covariance matrices are used
+as there are partitions.</p>
+</dd>
+<dt><strong>groupsize</strong><span class="classifier">int, optional</span></dt><dd><p>Approximately how many samples, when doing a rigid grid, shall be in
+each group. If none is passed, all samples will be in one group unless
+group_index is passed during fitting in which case the provided group
+index is used (the latter is the advised and preferred way).</p>
+</dd>
+<dt><strong>partitionsize</strong><span class="classifier">int or list of int, optional</span></dt><dd><p>Approximately how many samples, when doing a rigid grid, should be in
+each partition. If none is passed, a (hopefully sane) default is used
+unless partition_index is passed during fitting in which case
+the provided partition index is used.</p>
+</dd>
+<dt><strong>partitionsize</strong><span class="classifier">int, optional</span></dt><dd><p>Approximately how many samples, when doing a rigid grid, should be in
+each partition. If none is passed, a (hopefully sane) default is used,
+again, unless partition_index is passed during fitting in which case
+the provided partition index is used.</p>
+</dd>
+<dt><strong>timelags</strong><span class="classifier">list of strictly positive ints, optional</span></dt><dd><p>List of time lags to be considered for computing lagged covariance
+matrices.</p>
+</dd>
+<dt><strong>instantcov</strong><span class="classifier">boolean, optional</span></dt><dd><p>If False, no non-lagged instant (lag = 0) covariance matrices are used.</p>
+</dd>
+<dt><strong>max_iter</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum number of iterations for the uwedge approximate joint
+diagonalisation during fitting.</p>
+</dd>
+<dt><strong>tol</strong><span class="classifier">float, optional</span></dt><dd><p>Tolerance for terminating the uwedge approximate joint diagonalisation
+during fitting.</p>
+</dd>
+<dt><strong>minimize_loss</strong><span class="classifier">boolean, optional</span></dt><dd><p>If True at each iteration the loss of the uwedge approximate joint
+diagonalisation is computed (computationally expensive) and after
+convergence the V with minimal loss along the optimisation path is
+returned instead of the terminal V.</p>
+</dd>
+<dt><strong>condition_threshold</strong><span class="classifier">int, optional (default=None)</span></dt><dd><p>If int, the uwedge iteration is stopped when the condition number of
+the unmixing matrix grows beyond condition_threshold. If None, no such
+condition number check is performed.</p>
+</dd>
+<dt><strong>random_state</strong><span class="classifier">int, RandomState instance or None, optional (default=None)</span></dt><dd><p>If int, random_state is seeded used by the random number generator;
+if RandomState instance, random_state is the random number generator;
+if None, the random number generator is the RandomState instance used
+by np.random.</p>
+</dd>
+<dt><strong>skip_sklearn_checks: boolean, optional (default=False)</strong></dt><dd><p>If True, the sklearn checks check_array and check_X_y are being
+skipped. This enables complex value support; sklearn does not support
+complex values and check_array and check_X_y would throw a ValueError.
+As also the other sanity checks performed in check_array and check_X_y
+are being skipped, special caution is required when enabling this
+option.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>V_</strong><span class="classifier">array, shape (n, n_features)</span></dt><dd><p>The unmixing matrix; where n=n_features if n_components and
+n_components_uwedge are None, n=n_components_uwedge if n_components is
+None, and n=n_components otherwise.</p>
+</dd>
+<dt><strong>converged_</strong><span class="classifier">boolean</span></dt><dd><p>Whether the approximate joint diagonalisation converged due to tol.</p>
+</dd>
+<dt><strong>n_iter_</strong><span class="classifier">int</span></dt><dd><p>Number of iterations of the approximate joint diagonalisation.</p>
+</dd>
+<dt><strong>meanoffdiag_</strong><span class="classifier">float</span></dt><dd><p>Mean absolute value of the off-diagonal values of the to be jointly
+diagonalised matrices, i.e., a proxy of the approximate joint
+diagonalisation objective function.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-center">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coroica.CoroICA.fit" title="coroica.CoroICA.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(self, X[, y, group_index, partition_index])</p></td>
+<td><p>Fit the model</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code>(self, X[, y])</p></td>
+<td><p>Fit to data, then transform it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_params</span></code>(self[, deep])</p></td>
+<td><p>Get parameters for this estimator.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_params</span></code>(self, \*\*params)</p></td>
+<td><p>Set the parameters of this estimator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coroica.CoroICA.transform" title="coroica.CoroICA.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(self, X)</p></td>
+<td><p>Returns the data projected onto the fitted components</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="coroica.CoroICA.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>self</em>, <em>X</em>, <em>y=None</em>, <em>group_index=None</em>, <em>partition_index=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coroica/coroica.html#CoroICA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coroica.CoroICA.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array, shape (n_samples, n_features)</span></dt><dd><p>where n_samples is the number of samples and
+n_features is the number of features.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">Ignored.</span></dt><dd></dd>
+<dt><strong>group_index</strong><span class="classifier">array, optional, shape (n_samples,)</span></dt><dd><p>Codes for each sample which group it belongs to; if no group index
+is provided a rigid grid with self.groupsize samples per
+group is used (which defaults to all samples if self.groupsize
+was not set).</p>
+</dd>
+<dt><strong>partition_index</strong><span class="classifier">array, optional, shape (n_samples,)</span></dt><dd><p>Codes for each sample which partition it belongs to; if no
+partition index is provided a rigid grid with self.partitionsize
+samples per partition within each group is used (which has a
+(hopefully sane) default if self.partitionsize was not set).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>self</strong><span class="classifier">object</span></dt><dd><p>Returns self.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="coroica.CoroICA.transform">
+<code class="descname">transform</code><span class="sig-paren">(</span><em>self</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coroica/coroica.html#CoroICA.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coroica.CoroICA.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the data projected onto the fitted components</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array, shape (n_samples, n_features)</span></dt><dd><p>where n_samples is the number of samples and
+n_features is the number of features.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>X_transformed</strong><span class="classifier">array, shape (n_samples, n_components)</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="coroica.UwedgeICA">
+<em class="property">class </em><code class="descclassname">coroica.</code><code class="descname">UwedgeICA</code><span class="sig-paren">(</span><em>n_components=None</em>, <em>n_components_uwedge=None</em>, <em>rank_components=False</em>, <em>partitionsize=None</em>, <em>timelags=None</em>, <em>instantcov=True</em>, <em>max_iter=1000</em>, <em>tol=1e-12</em>, <em>minimize_loss=False</em>, <em>condition_threshold=None</em>, <em>skip_sklearn_checks=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coroica/uwedgeica.html#UwedgeICA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coroica.UwedgeICA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.BaseEstimator</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></p>
+<p>uwedgeICA transformer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>n_components</strong><span class="classifier">int, optional</span></dt><dd><p>Number of components to extract. If none is passed, the same number of
+components as the input has dimensions is used.</p>
+</dd>
+<dt><strong>n_components_uwedge</strong><span class="classifier">int, optional</span></dt><dd><p>Number of components to extract during uwedge approximate joint
+diagonalization of the matrices. If none is passed, the same number of
+components as the input has dimensions is used.</p>
+</dd>
+<dt><strong>rank_components</strong><span class="classifier">boolean, optional</span></dt><dd><p>When true, the components will be ordered in decreasing stability.</p>
+</dd>
+<dt><strong>partitionsize</strong><span class="classifier">int or list of int, optional</span></dt><dd><p>Approximately how many samples, when doing a rigid grid, should be in
+each partition. If none is passed, a (hopefully sane) default is used
+unless partition_index is passed during fitting in which case
+the provided partition index is used.</p>
+</dd>
+<dt><strong>timelags</strong><span class="classifier">list of strictly positive ints, optional</span></dt><dd><p>List of time lags to be considered for computing lagged covariance
+matrices.</p>
+</dd>
+<dt><strong>instantcov</strong><span class="classifier">boolean, optional</span></dt><dd><p>If False, no non-lagged instant (lag = 0) covariance matrices are used.</p>
+</dd>
+<dt><strong>max_iter</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum number of iterations for the uwedge approximate joint
+diagonalisation during fitting.</p>
+</dd>
+<dt><strong>tol</strong><span class="classifier">float, optional</span></dt><dd><p>Tolerance for terminating the uwedge approximate joint diagonalisation
+during fitting.</p>
+</dd>
+<dt><strong>minimize_loss</strong><span class="classifier">boolean, optional</span></dt><dd><p>If True at each iteration the loss of the uwedge approximate joint
+diagonalisation is computed (computationally expensive) and after
+convergence the V with minimal loss along the optimisation path is
+returned instead of the terminal V.</p>
+</dd>
+<dt><strong>condition_threshold</strong><span class="classifier">int, optional (default=None)</span></dt><dd><p>If int, the uwedge iteration is stopped when the condition number of
+the unmixing matrix grows beyond condition_threshold. If None, no such
+condition number check is performed.</p>
+</dd>
+<dt><strong>skip_sklearn_checks: boolean, optional (default=False)</strong></dt><dd><p>If True, the sklearn checks check_array and check_X_y are being
+skipped. This enables complex value support; sklearn does not support
+complex values and check_array and check_X_y would throw a ValueError.
+As also the other sanity checks performed in check_array and check_X_y
+are being skipped, special caution is required when enabling this
+option.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>V_</strong><span class="classifier">array, shape (n, n_features)</span></dt><dd><p>The unmixing matrix; where n=n_features if n_components and
+n_components_uwedge are None, n=n_components_uwedge if n_components is
+None, and n=n_components otherwise.</p>
+</dd>
+<dt><strong>converged_</strong><span class="classifier">boolean</span></dt><dd><p>Whether the approximate joint diagonalisation converged due to tol.</p>
+</dd>
+<dt><strong>n_iter_</strong><span class="classifier">int</span></dt><dd><p>Number of iterations of the approximate joint diagonalisation.</p>
+</dd>
+<dt><strong>meanoffdiag_</strong><span class="classifier">float</span></dt><dd><p>Mean absolute value of the off-diagonal values of the to be jointly
+diagonalised matrices, i.e., a proxy of the approximate joint
+diagonalisation objective function.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-center">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coroica.UwedgeICA.fit" title="coroica.UwedgeICA.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(self, X[, y, partition_index])</p></td>
+<td><p>Fit the model</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code>(self, X[, y])</p></td>
+<td><p>Fit to data, then transform it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_params</span></code>(self[, deep])</p></td>
+<td><p>Get parameters for this estimator.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_params</span></code>(self, \*\*params)</p></td>
+<td><p>Set the parameters of this estimator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coroica.UwedgeICA.transform" title="coroica.UwedgeICA.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(self, X)</p></td>
+<td><p>Returns the data projected onto the fitted components</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="coroica.UwedgeICA.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>self</em>, <em>X</em>, <em>y=None</em>, <em>partition_index=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coroica/uwedgeica.html#UwedgeICA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coroica.UwedgeICA.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array, shape (n_samples, n_features)</span></dt><dd><p>where n_samples is the number of samples and
+n_features is the number of features.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">Ignored.</span></dt><dd></dd>
+<dt><strong>partition_index</strong><span class="classifier">array, optional, shape (n_samples,)</span></dt><dd><p>Codes for each sample which partition it belongs to; if no
+partition index is provided a rigid grid with <a href="#id1"><span class="problematic" id="id2">self.partitionsize_</span></a>
+samples per partition within each group is used (which has a
+(hopefully sane) default if <a href="#id3"><span class="problematic" id="id4">self.partitionsize_</span></a> was not set).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>self</strong><span class="classifier">object</span></dt><dd><p>Returns self.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="coroica.UwedgeICA.transform">
+<code class="descname">transform</code><span class="sig-paren">(</span><em>self</em>, <em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coroica/uwedgeica.html#UwedgeICA.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coroica.UwedgeICA.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the data projected onto the fitted components</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array, shape (n_samples, n_features)</span></dt><dd><p>where n_samples is the number of samples and
+n_features is the number of features.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>X_transformed</strong><span class="classifier">array, shape (n_samples, n_components)</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">coroICA-python</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_examples/index.html">Minimalistic example</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="auto_examples/index.html" title="next chapter">Minimalistic example</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Niklas Pfister, Sebastian Weichwald.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

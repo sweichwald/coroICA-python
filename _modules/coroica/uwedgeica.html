@@ -1,0 +1,335 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>coroica.uwedgeica &#8212; coroICA-python 0.1.24
+ documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/gallery.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for coroica.uwedgeica</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding: utf-8</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">uwedgeICA</span>
+<span class="sd">Implementation of the NSS uwedgeICA algorithms used for comparison in</span>
+<span class="sd">coroICA: Independent component analysis for grouped data</span>
+<span class="sd">N Pfister*, S Weichwald*, P Bühlmann, B Schölkopf</span>
+<span class="sd">https://arxiv.org/abs/1806.01094</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">autocov</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">rigidgroup</span> <span class="k">as</span> <span class="n">rigidpartition</span>
+<span class="kn">from</span> <span class="nn">.uwedge</span> <span class="k">import</span> <span class="n">uwedge</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">linalg</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="k">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="k">import</span> <span class="n">check_X_y</span><span class="p">,</span> <span class="n">check_array</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="k">import</span> <span class="n">check_is_fitted</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+
+<div class="viewcode-block" id="UwedgeICA"><a class="viewcode-back" href="../../index.html#coroica.UwedgeICA">[docs]</a><span class="k">class</span> <span class="nc">UwedgeICA</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;uwedgeICA transformer</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_components : int, optional</span>
+<span class="sd">        Number of components to extract. If none is passed, the same number of</span>
+<span class="sd">        components as the input has dimensions is used.</span>
+<span class="sd">    n_components_uwedge : int, optional</span>
+<span class="sd">        Number of components to extract during uwedge approximate joint</span>
+<span class="sd">        diagonalization of the matrices. If none is passed, the same number of</span>
+<span class="sd">        components as the input has dimensions is used.</span>
+<span class="sd">    rank_components : boolean, optional</span>
+<span class="sd">        When true, the components will be ordered in decreasing stability.</span>
+<span class="sd">    partitionsize : int or list of int, optional</span>
+<span class="sd">        Approximately how many samples, when doing a rigid grid, should be in</span>
+<span class="sd">        each partition. If none is passed, a (hopefully sane) default is used</span>
+<span class="sd">        unless partition_index is passed during fitting in which case</span>
+<span class="sd">        the provided partition index is used.</span>
+<span class="sd">    timelags : list of strictly positive ints, optional</span>
+<span class="sd">        List of time lags to be considered for computing lagged covariance</span>
+<span class="sd">        matrices.</span>
+<span class="sd">    instantcov : boolean, optional</span>
+<span class="sd">        If False, no non-lagged instant (lag = 0) covariance matrices are used.</span>
+<span class="sd">    max_iter : int, optional</span>
+<span class="sd">        Maximum number of iterations for the uwedge approximate joint</span>
+<span class="sd">        diagonalisation during fitting.</span>
+<span class="sd">    tol : float, optional</span>
+<span class="sd">        Tolerance for terminating the uwedge approximate joint diagonalisation</span>
+<span class="sd">        during fitting.</span>
+<span class="sd">    minimize_loss : boolean, optional</span>
+<span class="sd">        If True at each iteration the loss of the uwedge approximate joint</span>
+<span class="sd">        diagonalisation is computed (computationally expensive) and after</span>
+<span class="sd">        convergence the V with minimal loss along the optimisation path is</span>
+<span class="sd">        returned instead of the terminal V.</span>
+<span class="sd">    condition_threshold : int, optional (default=None)</span>
+<span class="sd">        If int, the uwedge iteration is stopped when the condition number of</span>
+<span class="sd">        the unmixing matrix grows beyond condition_threshold. If None, no such</span>
+<span class="sd">        condition number check is performed.</span>
+<span class="sd">    skip_sklearn_checks: boolean, optional (default=False)</span>
+<span class="sd">        If True, the sklearn checks check_array and check_X_y are being</span>
+<span class="sd">        skipped. This enables complex value support; sklearn does not support</span>
+<span class="sd">        complex values and check_array and check_X_y would throw a ValueError.</span>
+<span class="sd">        As also the other sanity checks performed in check_array and check_X_y</span>
+<span class="sd">        are being skipped, special caution is required when enabling this</span>
+<span class="sd">        option.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    V_ : array, shape (n, n_features)</span>
+<span class="sd">        The unmixing matrix; where n=n_features if n_components and</span>
+<span class="sd">        n_components_uwedge are None, n=n_components_uwedge if n_components is</span>
+<span class="sd">        None, and n=n_components otherwise.</span>
+<span class="sd">    converged_ : boolean</span>
+<span class="sd">        Whether the approximate joint diagonalisation converged due to tol.</span>
+<span class="sd">    n_iter_ : int</span>
+<span class="sd">        Number of iterations of the approximate joint diagonalisation.</span>
+<span class="sd">    meanoffdiag_ : float</span>
+<span class="sd">        Mean absolute value of the off-diagonal values of the to be jointly</span>
+<span class="sd">        diagonalised matrices, i.e., a proxy of the approximate joint</span>
+<span class="sd">        diagonalisation objective function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">n_components</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">n_components_uwedge</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">rank_components</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">partitionsize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">timelags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">instantcov</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                 <span class="n">tol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
+                 <span class="n">minimize_loss</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">condition_threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">skip_sklearn_checks</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_components_uwedge</span> <span class="o">=</span> <span class="n">n_components_uwedge</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rank_components</span> <span class="o">=</span> <span class="n">rank_components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">partitionsize</span> <span class="o">=</span> <span class="n">partitionsize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timelags</span> <span class="o">=</span> <span class="n">timelags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instantcov</span> <span class="o">=</span> <span class="n">instantcov</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minimize_loss</span> <span class="o">=</span> <span class="n">minimize_loss</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition_threshold</span> <span class="o">=</span> <span class="n">condition_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">skip_sklearn_checks</span> <span class="o">=</span> <span class="n">skip_sklearn_checks</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timelags</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">instantcov</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;timelags=None and instantcov=True results in the &#39;</span>
+                          <span class="s1">&#39;identity transformer, since no (lagged) covariance &#39;</span>
+                          <span class="s1">&#39;matrices are to be diagonalised.&#39;</span><span class="p">,</span>
+                          <span class="ne">UserWarning</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UwedgeICA.fit"><a class="viewcode-back" href="../../index.html#coroica.UwedgeICA.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">partition_index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fit the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : array, shape (n_samples, n_features)</span>
+<span class="sd">            where n_samples is the number of samples and</span>
+<span class="sd">            n_features is the number of features.</span>
+<span class="sd">        y : Ignored.</span>
+<span class="sd">        partition_index : array, optional, shape (n_samples,)</span>
+<span class="sd">            Codes for each sample which partition it belongs to; if no</span>
+<span class="sd">            partition index is provided a rigid grid with self.partitionsize_</span>
+<span class="sd">            samples per partition within each group is used (which has a</span>
+<span class="sd">            (hopefully sane) default if self.partitionsize_ was not set).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self : object</span>
+<span class="sd">            Returns self.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_sklearn_checks</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">ensure_2d</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">n</span><span class="p">,</span> <span class="n">dim</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+                <span class="ow">or</span> <span class="n">dim</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+                <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timelags</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">instantcov</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">V_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span>
+
+        <span class="c1"># generate partition index as needed</span>
+        <span class="k">if</span> <span class="n">partition_index</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">partitionsize</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">partition_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">rigidpartition</span><span class="p">(</span>
+                <span class="n">n</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">dim</span><span class="p">,</span> <span class="n">n</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]))]</span>
+        <span class="k">elif</span> <span class="n">partition_index</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">partitionsize</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">partition_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">rigidpartition</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">partsize</span><span class="p">)</span>
+                                 <span class="k">for</span> <span class="n">partsize</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">partitionsize</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">partition_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">partition_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">rigidpartition</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">partitionsize</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">partition_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">partition_index</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_sklearn_checks</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">partition_index</span> <span class="ow">in</span> <span class="n">partition_indices</span><span class="p">:</span>
+                <span class="n">X</span><span class="p">,</span> <span class="n">partition_index</span> <span class="o">=</span> <span class="n">check_X_y</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">partition_index</span><span class="p">)</span>
+
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="c1"># computing covariance matrices</span>
+        <span class="n">no_partitions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">partition_index</span> <span class="ow">in</span> <span class="n">partition_indices</span><span class="p">:</span>
+            <span class="n">no_partitions</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">partition_index</span><span class="p">))</span>
+        <span class="n">timelags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">instantcov</span><span class="p">:</span>
+            <span class="n">timelags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timelags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">timelags</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timelags</span><span class="p">)</span>
+        <span class="n">no_timelags</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">timelags</span><span class="p">)</span>
+        <span class="n">covmats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">no_partitions</span> <span class="o">*</span> <span class="n">no_timelags</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">),</span>
+                           <span class="n">dtype</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">partition_index</span> <span class="ow">in</span> <span class="n">partition_indices</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">partition</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">partition_index</span><span class="p">):</span>
+                <span class="n">ind</span> <span class="o">=</span> <span class="p">(</span><span class="n">partition_index</span> <span class="o">==</span> <span class="n">partition</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">timelag</span> <span class="ow">in</span> <span class="n">timelags</span><span class="p">:</span>
+                    <span class="n">covmats</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">autocov</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="n">ind</span><span class="p">],</span> <span class="n">lag</span><span class="o">=</span><span class="n">timelag</span><span class="p">)</span>
+                    <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">Rx0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="c1"># joint diagonalisation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">converged_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_iter_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">meanoffdiag_</span> <span class="o">=</span> <span class="n">uwedge</span><span class="p">(</span>
+            <span class="n">covmats</span><span class="p">,</span>
+            <span class="n">Rx0</span><span class="o">=</span><span class="n">Rx0</span><span class="p">,</span>
+            <span class="n">eps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span>
+            <span class="n">minimize_loss</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">minimize_loss</span><span class="p">,</span>
+            <span class="n">n_iter_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">,</span>
+            <span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components_uwedge</span><span class="p">,</span>
+            <span class="n">condition_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_threshold</span><span class="p">)</span>
+
+        <span class="c1"># normalise V</span>
+        <span class="n">normaliser</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Rx0</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">conj</span><span class="p">())))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V_</span> <span class="o">/</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">normaliser</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">normaliser</span><span class="p">)))[:,</span> <span class="kc">None</span><span class="p">]</span>
+
+        <span class="c1"># rank components</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank_components</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="p">)</span>
+            <span class="n">colcorrs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c1"># running average</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">covmats</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">colcorrs</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span>
+                    <span class="n">A</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">covmats</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="p">)[:</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">:]</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span> <span class="o">/</span> <span class="n">covmats</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">sorting</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">colcorrs</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">V_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="p">[</span><span class="n">sorting</span><span class="p">,</span> <span class="p">:]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">V_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span> <span class="p">:]</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="UwedgeICA.transform"><a class="viewcode-back" href="../../index.html#coroica.UwedgeICA.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the data projected onto the fitted components</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : array, shape (n_samples, n_features)</span>
+<span class="sd">            where n_samples is the number of samples and</span>
+<span class="sd">            n_features is the number of features.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        X_transformed : array, shape (n_samples, n_components)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;V_&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_sklearn_checks</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">V_</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">T</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">coroICA-python</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_examples/index.html">Minimalistic example</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Niklas Pfister, Sebastian Weichwald.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
