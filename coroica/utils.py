@@ -38,7 +38,7 @@ def md_index(A, Vhat):
     Gsq = np.abs(G)**2
     Gtilde = Gsq / (Gsq.sum(axis=1)).reshape((d, 1))
     costmat = 1 - 2 * Gtilde + \
-        np.tile((Gtilde**2).sum(axis=0), d).reshape((d, d))
+        np.tile((Gtilde**2).sum(axis=1), d).reshape((d, d))
     row_ind, col_ind = linear_sum_assignment(costmat)
     md = np.sqrt(d - np.sum(np.diag(Gtilde[row_ind, col_ind]))) / \
         np.sqrt(d - 1)
